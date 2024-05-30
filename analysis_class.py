@@ -131,7 +131,7 @@ class analysis:
         if step == None:
             step = self.step
 
-        if filename = None:
+        if filename == None:
             filename = f"{lipid}_{layer}_{start}_{final}.dat"
 
         lipid_list = self.lipid_list
@@ -213,7 +213,7 @@ class analysis:
                     step = None,
                     lipid = "DSPC",
                     layer = 'up',
-                    filename = None, include_charge = False):
+                    filename = None, include_charge = False)
         return lipid_data_dict
 
 
