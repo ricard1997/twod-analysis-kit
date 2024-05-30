@@ -8,30 +8,39 @@ import time
 from matplotlib.patches import Patch
 
 
-class Rna_analysis:
+class analysis:
     def __init__(self, top, traj, start = 0,
                                 final = -1,
-                                lipids_dict = {"DODMA":["CN1", "CN2", "N1"],
-                                        "DSPC": ["C11", "C12", "C15", "C14", "C13"],
-                                        "POPE" : ["N", "C12", "C11"],
-                                        "DOPS": ["C11", "C12","C13", "N"],
-                                        "POPS": ["C11", "C12", "N"],
-                                        "DSPE":['N', "C12", "CB1", "OB1", "OB2", "CB2", "C11"],
-                                        },
-                                rna_at = ["C1'","C2'","C4'", "C3'", "C5'", "P", "O4'", "O2'", "O3'", "O2P", "O1P"],
-                                rna_resid = (1,43),
                                 step =1,
-
-                                lipid_list = ["DSPC", "DSPE", "DOPS", "POPE", "POPS"],
+                                membrane = False,
+                                protein = False,
+                                rna = False,
+                                lipid_list = None,
+                                protein_resids = None,
+                                rna_resids = None,
                                 time_scale = None,
                                 ):
 
-        self.top = top
-        self.color = ['tab:blue', 'tab:orange', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink']
-        self.traj = traj
-        self.pegm_ha = ["C1", "O1", "C2"]
-        self.lipids_dict = lipids_dict
-        self.lipid_list = lipid_list
+        self.top = top # Set the topology
+        self.traj = traj # Set the traj
+
+        self.color = ['tab:blue', 'tab:orange', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink'] # Set a palette color if needed
+
+        if membrane != None:
+            self.lipid_list = lipid_list # Lipids in study
+
+
+        self.working_lip = {
+                                "CHL1" : {"head" :"O3", "charge" : 0},
+                                "DODMA" : {"head" :"N1", "charge" : -0.21},
+                                "DSPC" : {"head" :"P", "charge" : 1.1},
+                                "POPE" : {"head" :"P", "charge" : 1.1},
+                                "DOPS" : {"head" :"P", "charge" : 0.1},
+                                "POPS" : {"head" :"P", "charge" : 0.1},
+                                "DSPE" : {"head" :"P", "charge" : 1.3},
+                            } #List of known lipids and lipids head people usually use to work
+
+
         self.test = True
         self.rna_at = rna_at
         self.rna_resid = rna_resid
@@ -51,7 +60,7 @@ class Rna_analysis:
             "POPS" : "P",
             "DSPE" : "P",
         }
-        
+
         self.charge_li = {'DSPC' : 1.1,
 		                    'POPE' : 1.1,
 		                    'DODMA' : -0.21,
@@ -106,18 +115,112 @@ class Rna_analysis:
         string = string + ") "
         return string
 
+    # Return a dictionary with the positions of the lipids heads over a period of time
+    def surface(self,
+                start = None,
+                final = None,
+                step = None,
+                lipid = "DSPC",
+                layer = 'up',
+                filename = None, include_charge = False):
+
+        if start == None:
+            start = self.start
+        if final == None:
+            final = self.final
+        if step == None:
+            step = self.step
+
+        if filename = None:
+            filename = f"{lipid}_{layer}_{start}_{final}.dat"
+
+        lipid_list = self.lipid_list
+
+
+        print("######### Running surface function ########## ")
+        print(f"We will compute the surface files for a membrane with there lipids {lipid_list}")
+        print(f"Currently working on: {lipid}")
+        print(f"Layer: {layer}")
+        print(f"Writing under the name of {filename}")
+
+
+        sign = " > "
+        if layer != "up":
+            sign = " < "
+
+
+        ##### Select all the P atoms to find the middle of the membrane
+        all_p = self.all_p
+
+
+
+        #### Loop over trajectory to find the lipids in the requested membrane
+        pos_data = []
+        for ts in self.u.trajectory[start:final:step]:
+            positions = all_p.positions[:,2]
+            mean_z = positions.mean()
+
+            # Selects the lipid head and of the working lipid
+            selection_string = f"(resname {lipid} and name {self.working_lip[lipid]}) and prop z {sign} {str(mean_z)}"
+
+
+            # Find the positions of the P atoms
+            atoms = self.u.select_atoms(selection_string)
+
+
+            #### Check number of atoms
+            n_at = atoms.n_atoms
+
+            ### Get positions
+            atom_pos = atoms.positions
+
+            ### Get resids
+            atom_resid = atoms.resids
+            atom_resid = atom_resid[:,np.newaxis]
+
+            atom_pos = np.concatenate((atom_pos, atom_resid), axis = 1)
+            atom_pos[:,2] = np.abs(atom_pos[:,2] - mean_z)
+
+            pos_data.append(atom_pos)
+
+
+
+        pos_data = np.concatenate(pos_data, axis = 0)
+        df_data = pd.DataFrame(pos_data, columns = ["x", "y", "z", "id"])
+
+        if include_charge:
+            df_data["charge"] = self.charge_li[lipid]
+            df_data.to_csv(f"pd_{filename}", index = False)
+        df_data.to_csv(f"{filename}", pos_data, delimiter = ',')
+
+        return df_data   # Maybe have to change, it does not make sense to return this
+
+
+
+    # Return a dictionary with the data of surface
+    def surface_list(self,
+                start = None,
+                final = None,
+                step = None,
+                lipids = ["DSPC", "DOPC"],
+                layer = 'up',
+                filename = None, include_charge = False):
+        lipid_data_dict = {}
+        for lipid in lipids:
+            lipid_data_dict[lipid] = surface(self,
+                    start = None,
+                    final = None,
+                    step = None,
+                    lipid = "DSPC",
+                    layer = 'up',
+                    filename = None, include_charge = False):
+        return lipid_data_dict
 
 
 
 
 
-
-
-
-
-
-
-
+"""
 
 
 
@@ -144,21 +247,21 @@ class Rna_analysis:
         print(f"Writing under the name of {filename}")
 
 
-        sign = " > " 
+        sign = " > "
         if layer != "up":
             sign = " < "
-        ##### Select all the P atoms to find the middle of the membrane 
+        ##### Select all the P atoms to find the middle of the membrane
         all_p = self.all_p
 
-        
-        
+
+
         #### Loop over trajectory to find the lipids in the requested membrane
         pos_data = []
         for ts in self.u.trajectory[start:final:step]:
             positions = all_p.positions[:,2]
             mean_z = positions.mean()
-            selection_string = f"(resname {lipid} and name {self.working_lip[lipid]}) and prop z {sign} {str(mean_z)}" 
-            
+            selection_string = f"(resname {lipid} and name {self.working_lip[lipid]}) and prop z {sign} {str(mean_z)}"
+
             #print(selection_string)
             atoms = self.u.select_atoms(selection_string)
 
@@ -179,7 +282,7 @@ class Rna_analysis:
             pos_data.append(atom_pos)
 
 
-        
+
         pos_data = np.concatenate(pos_data, axis = 0)
         if include_charge:
             print(pos_data.shape)
@@ -187,8 +290,8 @@ class Rna_analysis:
             df_data["charge"] = self.charge_li[lipid]
             df_data.to_csv(f"pd_{filename}", index = False)
         np.savetxt(filename, pos_data, delimiter = ',')
-        
-        return self.build_resname(lipid_list)   # Maybe have to change, it does not make sense to return this    
+
+        return self.build_resname(lipid_list)   # Maybe have to change, it does not make sense to return this
 
 
 
@@ -211,7 +314,7 @@ class Rna_analysis:
                 else:
                     frames_list.append(frames_list[i] + step2)
 
-            
+
 
         if start == None:
             start = self.start
@@ -233,14 +336,14 @@ class Rna_analysis:
         lipid_list = self.lipid_list
 
 
-        sign = " > " 
+        sign = " > "
         if layer != "up":
             sign = " < "
-        ##### Select all the P atoms to find the middle of the membrane 
+        ##### Select all the P atoms to find the middle of the membrane
         all_p = self.all_p
 
-        
-        
+
+
         #### Loop over trajectory to find the lipids in the requested membrane
         pos_data = []
         count = start
@@ -249,11 +352,11 @@ class Rna_analysis:
         for ts in self.u.trajectory[start:final:step]:
             positions = all_p.positions[:,2]
             mean_z = positions.mean()
-            selection_string = f"byres (resname {lipid} and name {self.working_lip[lipid]}) and prop z {sign} {str(mean_z)}" 
-            
+            selection_string = f"byres (resname {lipid} and name {self.working_lip[lipid]}) and prop z {sign} {str(mean_z)}"
+
             #print(selection_string)
             atoms = self.u.select_atoms(selection_string)
-            
+
             origin = atoms.select_atoms(sel_for_vec[lipid][0])
             fin = atoms.select_atoms(sel_for_vec[lipid][1])
             vectors = fin.positions - origin.positions # Expected dim n_lip X 3
@@ -261,7 +364,7 @@ class Rna_analysis:
             atoms = origin
 
             atoms_pos = atoms.positions
-            
+
             vect_df = pd.DataFrame(vectors, columns = ["x", "y", "z"])
             #### Check number of atoms
             n_at = atoms.n_atoms
@@ -273,7 +376,7 @@ class Rna_analysis:
             vect_df["x_0"] = atoms_pos[:,0]
             vect_df["y_0"] = atoms_pos[:,1]
             vect_df["z_0"] = atoms_pos[:,2]
-            
+
             if multiple_step:
                 #print(count, frames_list)
                 if count in frames_list:
@@ -286,14 +389,14 @@ class Rna_analysis:
         if frames_check != 0:
             print(f"Frames has been written with double steps and the number of frames is: {frames_check}")
             print(f"The start frame is {frames_list[0]} and the last is {frames_list[-1]}, which includes a lenght of {len(frames_list)}")
-        
+
         pos_data = pd.concat(pos_data, axis = 0)
 
         if filename == None:
             filename = f"{lipid}_{start}.dat"
         pos_data.to_csv(f"pd_{filename}", index = False)
-        
-        return pos_data   # Maybe have to change, it does not make sense to return this    
+
+        return pos_data   # Maybe have to change, it does not make sense to return this
 
     def plot_2dvectors(self, lipid = "DOPS",stage = "touchdown", start = 0, final = -1, layer = "up",filename = None):
         if filename == None:
@@ -303,12 +406,12 @@ class Rna_analysis:
         except:
             vect = self.surface_vectors(lipid = lipid, start = start, final = final, layer = layer, filename = filename.replace("pd_", ""))
 
-        
+
         #ha_com, p_pos = self.rna_positions(start = start, final = final)
         nts, ha_com = self.get_ordered_nts(f"../{stage}/")
 
 
-        
+
 
 
         print(vect)
@@ -329,8 +432,8 @@ class Rna_analysis:
 					 linestyle='None')
 
         sns.kdeplot(x = ha_com["x"], y = ha_com["y"], color = "black", levels = 1)
-        plt.xlabel("x [$\AA$]")
-        plt.ylabel("y [$\AA$]")
+        plt.xlabel("x [$\\AA$]")
+        plt.ylabel("y [$\\AA$]")
         plt.savefig(f"vectors_{lipid}_{start}.png")
         plt.close()
 
@@ -365,15 +468,15 @@ class Rna_analysis:
 					 linestyle='None')
 
         sns.kdeplot(x = ha_com["x"], y = ha_com["y"], color = "black", levels = 1)
-        plt.xlabel("x [$\AA$]")
+        plt.xlabel("x [$\\AA$]")
         plt.xlim(0,175)
         plt.ylim(0,175)
-        plt.ylabel("y [$\AA$]")
+        plt.ylabel("y [$\\AA$]")
         plt.savefig(f"avg_vectors_{lipid}_{start}.png")
         plt.close()
 
 
-        
+
 
 
         sample1 = vect[["x_0", "y_0"]].values
@@ -403,7 +506,7 @@ class Rna_analysis:
 
 
 
-        
+
 
         print("pse:",exect)
 
@@ -434,16 +537,16 @@ class Rna_analysis:
 					 linestyle='None')
 
         sns.kdeplot(x = ha_com["x"], y = ha_com["y"], color = "black", levels = 1)
-        plt.xlabel("x [$\AA$]")
-        plt.ylabel("y [$\AA$]")
+        plt.xlabel("x [$\\AA$]")
+        plt.ylabel("y [$\\AA$]")
         plt.savefig(f"{lipid}_field_{start}.png")
-        return vect 
+        return vect
 
 
 
 ##### Plot vector fields and vector for vatious lipids at a time
     def plot_vector_lipids(self, lipids = ["DOPS"],stage = "touchdown", start = 0, final = -1,output = "field.png", layer = "up", zoom = False, multiple_step = None, n_frames = 100, axis1 = None, axis2 = None, axis3 = None):
-        
+
         dict_data = {}
         print(multiple_step, n_frames)
 
@@ -461,9 +564,9 @@ class Rna_analysis:
                                                             final = final,
                                                             layer = layer,
                                                             multiple_step=multiple_step,
-                                                            n_frames = n_frames) 
+                                                            n_frames = n_frames)
                 else:
-                    dict_data[lipid] = self.surface_vectors(lipid = lipid, start = start, final = final, layer = layer) 
+                    dict_data[lipid] = self.surface_vectors(lipid = lipid, start = start, final = final, layer = layer)
                 dict_data[lipid]["norm"] = np.linalg.norm(dict_data[lipid][["x", "y", "z"]].values, axis =1)
                 dict_data[lipid]["x"] = dict_data[lipid]["x"]/dict_data[lipid]["norm"]
                 dict_data[lipid]["y"] = dict_data[lipid]["y"]/dict_data[lipid]["norm"]
@@ -488,7 +591,7 @@ class Rna_analysis:
 
         for lipid in lipids:
             vect = dict_data[lipid].copy()
-            
+
             if axis1:
                 print("imporimiendo en el axis")
                 axis1.quiver(vect["x_0"],
@@ -497,7 +600,7 @@ class Rna_analysis:
                     vect["y"],
                     angles = "xy",
                     scale_units = "xy",
-                    
+
                     label = lipid,
                     color = color_lip[lipid],
                     scale = 1)
@@ -543,7 +646,7 @@ class Rna_analysis:
 					 markeredgewidth = markerwidth/4,
                      linewidth = 0.5,
 					 linestyle='None')
-                
+
 
         if axis1:
             sns.kdeplot(x = ha_com["x"], y = ha_com["y"],ax = axis1, color = "black", levels = 1)
@@ -555,10 +658,10 @@ class Rna_analysis:
         else:
             sns.kdeplot(x = ha_com["x"], y = ha_com["y"], color = "black", levels = 1)
             sns.kdeplot(x = ha_com["x"], y = ha_com["y"],ax = ax_array[0], color = "black", levels = 1)
-        plt.xlabel("x [$\AA$]")
-        plt.ylabel("y [$\AA$]")
-        ax_array[0].set_xlabel("x [$\AA$]")
-        ax_array[0].set_ylabel("y [$\AA$]")
+        plt.xlabel("x [$\\AA$]")
+        plt.ylabel("y [$\\AA$]")
+        ax_array[0].set_xlabel("x [$\\AA$]")
+        ax_array[0].set_ylabel("y [$\\AA$]")
         ax_array[0].set_title("Raw points")
         plt.title("Raw points")
         if v_min != None and v_max != None:
@@ -566,12 +669,12 @@ class Rna_analysis:
             plt.ylim(v_min, v_max)
             ax_array[0].set_xlim(v_min,v_max)
             ax_array[0].set_ylim(v_min,v_max)
-        
+
         #plt.legend(bbox_to_anchor=(0., 1.02,1, .102), loc='lower left', borderaxespad=0.,mode = "expand",frameon=False, ncols = len(lipids))
         plt.savefig(f"vectors_{start}.png")
         plt.show()
         plt.close()
-        
+
         return axis1
         ###### Plot mean plot ######
         '''
@@ -614,11 +717,11 @@ class Rna_analysis:
 
         sns.kdeplot(x = ha_com["x"], y = ha_com["y"], color = "black", levels = 1)
         sns.kdeplot(x = ha_com["x"], y = ha_com["y"],ax =ax_array[1] , color = "black", levels = 1)
-        plt.xlabel("x [$\AA$]")
-        plt.ylabel("y [$\AA$]")
+        plt.xlabel("x [$\\AA$]")
+        plt.ylabel("y [$\\AA$]")
         plt.title("Mean")
-        ax_array[1].set_xlabel("x [$\AA$]")
-        ax_array[1].set_ylabel("y [$\AA$]")
+        ax_array[1].set_xlabel("x [$\\AA$]")
+        ax_array[1].set_ylabel("y [$\\AA$]")
         ax_array[1].set_title("Mean")
         if v_min != None and v_max != None:
             plt.xlim(v_min, v_max)
@@ -681,11 +784,11 @@ class Rna_analysis:
 
         sns.kdeplot(x = ha_com["x"], y = ha_com["y"], color = "black", levels = 1)
         sns.kdeplot(x = ha_com["x"], y = ha_com["y"], ax = ax_array[2], color = "black", levels = 1)
-        plt.xlabel("x [$\AA$]")
-        plt.ylabel("y [$\AA$]")
+        plt.xlabel("x [$\\AA$]")
+        plt.ylabel("y [$\\AA$]")
         plt.title("Field (cumulative)")
-        ax_array[2].set_xlabel("x [$\AA$]")
-        ax_array[2].set_ylabel("y [$\AA$]")
+        ax_array[2].set_xlabel("x [$\\AA$]")
+        ax_array[2].set_ylabel("y [$\\AA$]")
         ax_array[2].set_title("Field (cumulative)")
         if v_min != None and v_max != None:
             plt.xlim(v_min, v_max)
@@ -697,7 +800,7 @@ class Rna_analysis:
 
         fig.savefig(f"{start}_output")
         fig.show()
-        
+
         return axis1
         '''
 
@@ -721,7 +824,7 @@ class Rna_analysis:
         if step == None:
             step = self.step
 
-        
+
         print(f"Computing matrix for {layer} in frames {start}-{final}")
         data = []
         for lipid in lipids:
@@ -769,7 +872,7 @@ class Rna_analysis:
         if step == None:
             step = self.step
 
-        
+
         print(f"Computing matrix for {layer} in frames {start}-{final}")
         data = []
         for lipid in lipids:
@@ -807,7 +910,7 @@ class Rna_analysis:
         np.savetxt(f'H{layer}_{start}_{final}.dat', H_avg, fmt = '%.2f')
         return H_avg, x_edges, y_edges
 
-    def plot_matrix(self, H, x_edges, y_edges,stage = "highest",colorbarlabel = "Height $\AA$", filename = "deltaplot.png"): 
+    def plot_matrix(self, H, x_edges, y_edges,stage = "highest",colorbarlabel = "Height $\\AA$", filename = "deltaplot.png"):
         #rcParams['font.family']='serif'
         bigsize = 17
         #plt.figure(figsize = (5,2))
@@ -838,7 +941,7 @@ class Rna_analysis:
             print(f" File plotting ../{stage}/full_ha_table.dat")
         except:
             ha_com, p_pos  = self.rna_positions(ha_file = f"ha_com.dat", p_file = f"p_pos.dat")
-            
+
         try:
             nts = nts.iloc[:6]
             if len(nts) > 0:
@@ -851,8 +954,8 @@ class Rna_analysis:
 
         sns.kdeplot(x = ha_com["x"], y = ha_com["y"], ax = ax, color = "blue", levels = 1)
         cbar.set_label(colorbarlabel)
-        plt.xlabel('x [$\AA$]')
-        plt.ylabel('y [$\AA$]')
+        plt.xlabel('x [$\\AA$]')
+        plt.ylabel('y [$\\AA$]')
         plt.tight_layout()
         plt.show()
         plt.savefig(filename)
@@ -868,13 +971,13 @@ class Rna_analysis:
             #raise ValueError('A very specific bad thing happened.')
 
         data_df = data_df.iloc[:6]
-        resids = data_df["resname"].tolist() 
+        resids = data_df["resname"].tolist()
         ha_com, p_pos  = self.rna_positions(ha_file = f"{filename}ha_com.dat", p_file = f"{filename}p_pos.dat")
         #print(ha_com.columns)
         means = ha_com.groupby("resid").mean()
         return means.loc[resids], ha_com
-        
-        
+
+
 
 
 
@@ -895,7 +998,7 @@ class Rna_analysis:
 
             ha_data = pd.read_csv(ha_filename)
             p_data = pd.read_csv(p_filename)
-            
+
             self.ha_closest = ha_data
             self.p_closest = p_data
             print("Warning: you are using files that where already there")
@@ -918,19 +1021,19 @@ class Rna_analysis:
             del self.lipids_dict["DSPE"]
         else:
             lipids_at = {}
-        
+
 
 
 
         for lipid in self.lipids_dict.keys():
             lipids_at[lipid] = "(resname " + lipid + " and "+ self.build_name(self.lipids_dict[lipid]) + ")"
-        
+
         keys_lip_at = list(lipids_at.keys())
         h_atoms = lipids_at[keys_lip_at[0]]
         for lipids in keys_lip_at[1:]:
             h_atoms = h_atoms + " or " + lipids_at[lipids]
 
-        ## rna heacy atoms    
+        ## rna heacy atoms
         rna_ha = self.build_name(self.rna_at)
 
         ##### This cutoff helps to optimize the computations, this way we do not take into account all the lipids but we asure that the lipids uder consideration are within a cutoff of 10A
@@ -966,32 +1069,32 @@ class Rna_analysis:
 
                 # Compute the center of mass of the nucleotide heavy atoms
                 com_nt = nts_ha.center_of_mass()
-                # Choose the P atoms of the nucleotide                          
+                # Choose the P atoms of the nucleotide
                 p = self.u.select_atoms("resid " + str(id) + " and name P")
                 min_v = np.nan
                 z_mean = np.nan
-                # Only do if there is possible lipids, if not, no needed        
+                # Only do if there is possible lipids, if not, no needed
                 if len(li_ha) > 0:                                                  # Compute center of mass of the ha of the lipids by residue: got a NX3 matrix
-                    com_lip = li_ha.center_of_mass(compound = 'fragments')                                                                                                                                           # Cast the matrix with the COM of the nucleotide                
-                    distances_mat = com_lip - com_nt                                                                                                # Get the actual distances                                      
-                    distances = np.linalg.norm(distances_mat, axis = 1)                                                                             #Get the min distance                                           
-                    min_v = np.min(distances)                                                                                                             # Get the lipids within the cutoff of 10A                                                                                       
-                    dist_to_filter = pd.DataFrame({'z' : distances_mat[:,2], 'dist' : distances})                                                   
-                    dist_to_filter = dist_to_filter[dist_to_filter['dist'] <= 10]                                                                   
+                    com_lip = li_ha.center_of_mass(compound = 'fragments')                                                                                                                                           # Cast the matrix with the COM of the nucleotide
+                    distances_mat = com_lip - com_nt                                                                                                # Get the actual distances
+                    distances = np.linalg.norm(distances_mat, axis = 1)                                                                             #Get the min distance
+                    min_v = np.min(distances)                                                                                                             # Get the lipids within the cutoff of 10A
+                    dist_to_filter = pd.DataFrame({'z' : distances_mat[:,2], 'dist' : distances})
+                    dist_to_filter = dist_to_filter[dist_to_filter['dist'] <= 10]
                     z_mean = dist_to_filter['z'].mean()
                     #print(li_ha)
 
-        
+
                 ha_temp.append(min_v) # Store the min value for the nucleotides
-        
+
                 z_temp.append(np.abs(z_mean)) # Store the z mean distance
 
         # For the first nucleotide append NAN since it does not have P
-        
+
                 if id == 1:
-            
+
                     z_p_temp.append(np.nan)
-            
+
                     p_temp.append(np.nan)
                 else:
                     if len(li_p) > 0:
@@ -1016,7 +1119,7 @@ class Rna_analysis:
                         z_p_temp.append(np.abs(z_mean_p))
 
                     else: # If there is not lipids within the cutoff, we append NAN
-                        p_temp.append(np.nan)                                          
+                        p_temp.append(np.nan)
                         z_p_temp.append(np.nan)
 
             ha_atoms.append(ha_temp)
@@ -1028,7 +1131,7 @@ class Rna_analysis:
         z_ha_dist = pd.DataFrame(z_ha_dist)
         p_atoms = pd.DataFrame(p_atoms)
         z_p_dist = pd.DataFrame(z_p_dist)
-        
+
 
         ha_closest = pd.DataFrame(ha_atoms.mean(), columns = ['Mean'])
         ha_closest = ha_closest.reset_index()
@@ -1048,7 +1151,7 @@ class Rna_analysis:
         p_closest['z-p-distace'] = z_p_dist.mean()
 
         print('##### closes_p written ############')
-        
+
         p_closest.to_csv(p_filename, index=False)
 
         #print(h_atoms)
@@ -1109,11 +1212,11 @@ class Rna_analysis:
         self.p_pos = p_pos
 
         return [ha_com, p_pos]
-   
+
    #def compute_areas(self):
 
-        
-    # Function to get the area 
+
+    # Function to get the area
     def get_area(self, df,resid):
         temp = df[df['resid'] == resid]
     #   print(temp)
@@ -1162,7 +1265,7 @@ class Rna_analysis:
             ha_com, p_pos = self.rna_positions(ha_file, p_file)
             print("no files related withh_com, p_pos to compute areas, we will computhem now ...")
 
-        
+
         print("ha", ha_com,"##########p", self.ha_com)
 
         rna_resname = ha_com['resid'].unique().tolist()
@@ -1173,7 +1276,7 @@ class Rna_analysis:
 
         for resid in rna_resname:
             areas_ha.append(self.get_area(ha_com, resid))
-            if resid != rna_resname[0]: 
+            if resid != rna_resname[0]:
                 areas_p.append(self.get_area(p_pos, resid))
 
         # Read min-distance and z distance data
@@ -1185,7 +1288,7 @@ class Rna_analysis:
             self.min_dist()
             ha_data = self.ha_closest
             p_data = self.p_closest
-            
+
         #ha_data = pd.read_csv('closest_nts_ha.dat')
         #p_data = pd.read_csv('closest_nts_p.dat')
 
@@ -1198,7 +1301,7 @@ class Rna_analysis:
         #print(ha_data)
 
         p_data['area'] = [np.nan] + areas_p
-        p_data['resname'] = rna_resname 
+        p_data['resname'] = rna_resname
         p_data  = p_data[p_data['p-min-distance'] <= 10]
         p_data = p_data.sort_values(by = 'p-min-distance')
         p_data.to_csv(out_p_file)
@@ -1207,7 +1310,7 @@ class Rna_analysis:
         return [self.ha_table, self.p_table]
 
 
-			
+
     def nose():
         print("hs")
 
@@ -1235,7 +1338,7 @@ class Rna_analysis:
         mpl.rcParams['ytick.direction'] = 'in'
         plt.rcParams['axes.linewidth'] = 3
         plt.rcParams['lines.linewidth'] = 2
-        #mpl.rcParams['axes.prop_cycle'] = mpl.cycler('color', ['#2ca02c','#1f77b4', '#ff7f0e', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']) 
+        #mpl.rcParams['axes.prop_cycle'] = mpl.cycler('color', ['#2ca02c','#1f77b4', '#ff7f0e', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'])
         plt.rcParams["figure.autolayout"] = True
 
 
@@ -1245,6 +1348,7 @@ class Rna_analysis:
 ############## Plot the contour of the RNA and the 6 first nucleotides ##########################
     def full_contour(self, data_df, filename, nucl):
         #print(data_df)
+
         plt.close()
         kde_plot_1=sns.kdeplot(data=data_df, x='x',y='y', levels = 1, color = 'black')
 	    #df_1 = df.sort_values(by='Mean')
@@ -1252,30 +1356,30 @@ class Rna_analysis:
         self.color = ['tab:blue', 'tab:orange', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink']
         thresh_list = [0.25, 0.35, 0.5, 0.65, 0.8]
         kde_plot_1=sns.kdeplot(data=data_df, x='x',y='y', levels = thresh_list , color='black')
-	
-	
+
+
 	    #print(nts_list[:7])
         count = 0
         for nt in nts_list[:6]:
 	        temp = data_df[data_df['resid'] == nt]
 	        pos = temp[['x', 'y']].mean()
 	        plt.text(pos[0], pos[1], str(nt))
-	        
+
 	        sns.kdeplot(data=temp, x='x',y='y', levels = thresh_list, fill=False, color=self.color[count])
 	        sns.kdeplot(data = temp, x = 'x', y = 'y', fill = True, color=self.color[count], alpha = 0.5)
 	        count += 1
-        plt.xlabel('x $[\AA]$')
+        plt.xlabel('x $[\\AA]$')
         plt.xlim(self.lower_lim,self.upper_lim)
         plt.ylim(self.lower_lim,self.upper_lim)
-	
+
         legend_handles = []
         for i in range(len(nts_list[:6])):
 	        legend_handles.append(Patch(color = self.color[i], label = nts_list[i]))
         plt.legend(handles=legend_handles, labelspacing = 0, handletextpad=0.1)
-        plt.ylabel('y $[\AA]$')
+        plt.ylabel('y $[\\AA]$')
         plt.savefig(filename+ ".png")
         plt.show()
-		
+
 
 ###################################################
 
@@ -1295,7 +1399,7 @@ class Rna_analysis:
                                         levels = 1,
                                         color = 'black',
                                         alpha = 0.8)
-        
+
         contour_lines_1 = kde_plot.collections
         x_values = contour_lines_1[0].get_paths()[0].vertices[:,0]
         y_values = contour_lines_1[0].get_paths()[0].vertices[:,1]
@@ -1307,7 +1411,7 @@ class Rna_analysis:
         #if self.test:
         self.lower_lim = min(xlim_low, ylim_low) - 4
         self.upper_lim = max(xlim_up, ylim_up) + 4
-        return [self.lower_lim, self.upper_lim] 
+        return [self.lower_lim, self.upper_lim]
 
 
 
@@ -1336,8 +1440,8 @@ class Rna_analysis:
                                         color='black',
                                         alpha = 0.8,
                                         ax = ax)
-	
-	
+
+
 	    #print(nts_list[:7])
 
         count = 0
@@ -1345,7 +1449,7 @@ class Rna_analysis:
 	        temp = data_df[data_df['resid'] == nt]
 	        pos = temp[['x', 'y']].mean()
 	        ax.text(pos[0], pos[1], str(nt), fontsize = 12)
-	        
+
 	        sns.kdeplot(data=temp,
                                 x='x',
                                 y='y',
@@ -1363,16 +1467,16 @@ class Rna_analysis:
                                 alpha = 0.5,
                                 ax = ax)
 	        count += 1
-	
-        ax.set_xlabel('x $[\AA]$')
+
+        ax.set_xlabel('x $[\\AA]$')
         ax.set_xlim(self.lower_lim,self.upper_lim)
         ax.set_ylim(self.lower_lim,self.upper_lim)
 
         plt.xlim(self.lower_lim, self.upper_lim)
         plt.ylim(self.lower_lim, self.upper_lim)
 
-        ax.set_ylabel('y $[\AA]$')
-		
+        ax.set_ylabel('y $[\\AA]$')
+
 
 ###################################################
 
@@ -1385,7 +1489,7 @@ class Rna_analysis:
         lipids_data = pd.DataFrame(lipids_data, columns = ['x', 'y', 'z', 'resid'])
         lipids_data['resid'] = lipids_data['resid'].astype(int)
         #print(lipids_data)
-        resids_u = lipids_data['resid'].unique() 
+        resids_u = lipids_data['resid'].unique()
 
         for id in resids_u:
             temp = lipids_data[lipids_data['resid']==id]
@@ -1402,7 +1506,7 @@ class Rna_analysis:
             # If lipids has not cross the periodic box, plot it
                 kde = sns.kdeplot(data = temp, x =     'x', y = 'y', fill = True, alpha = 0.5, color='green', ax = ax)
                 #print("Added to ax")
-        #ax.set_ylim(self.lower_lim, self.upper_lim) 
+        #ax.set_ylim(self.lower_lim, self.upper_lim)
         #ax.set_xlim(self.lower_lim, self.upper_lim)
         #plt.xlim(self.lower_lim, self.upper_lim)
         #plt.ylim(self.lower_lim, self.upper_lim)
@@ -1420,7 +1524,7 @@ class Rna_analysis:
 
     def lipid_contour_plot_p(self, lipids_paths, out_file):
 
-        #print(lipids_paths) 
+        #print(lipids_paths)
         plt.rcParams['lines.linewidth'] = 1.5
 
         if len(lipids_paths) == 4:
@@ -1466,8 +1570,8 @@ class Rna_analysis:
                         loc = "outside lower center",
                         frameon = False,
                         ncol = len(color))
-    
-    
+
+
         plt.savefig("plt" + out_file)
         plt.show()
         fig.savefig(out_file)
@@ -1483,7 +1587,7 @@ class Rna_analysis:
     def lipid_contour_plot_ha(self, lipids_paths, out_file):
 
         plt.rcParams['lines.linewidth'] = 1.5
-    
+
 
         if len(lipids_paths) == 4:
             fig, ax = plt.subplots(2,2,sharex=True, sharey = True, layout='constrained')
@@ -1529,8 +1633,8 @@ class Rna_analysis:
                         loc = "outside lower center",
                 frameon = False,
                 ncol = len(color))
-    
-    
+
+
         plt.savefig("plt" + out_file)
         plt.show()
         fig.savefig(out_file)
@@ -1538,7 +1642,7 @@ class Rna_analysis:
         plt.close()
 
 
-    
+
 ##################### Plot to compare the value of the areas and dist ####################
 
 
@@ -1565,7 +1669,7 @@ class Rna_analysis:
             #print('####',temp[columns[2]], "####3", temp, "####", temp[columns[2]].idxmax())
             temp = temp.sort_values(by=columns[identity])
             temp1 = temp1.sort_values(by=columns[identity])
-        #print("Ordered_columns", temp, temp1) 
+        #print("Ordered_columns", temp, temp1)
 
     #max_table = pd.DataFrame(max_table, columns = ['Nucleotide', 'Distance', 'dist-resid', 'Area', 'area_resid'])
 
@@ -1576,18 +1680,18 @@ class Rna_analysis:
             ax1[count1][count].tick_params(axis='x', rotation=45)
             print(count1, count)
             if count == 1:
-                count = -1 
+                count = -1
                 count1 = 1
             count+=1
             plt.legend()
 
 
- 
+
 
         print(columns, columns[identity], cosa)
 
 
-        fig.text(0.02, 0.5, 'Area $\AA^2$', va='center', rotation='vertical')
+        fig.text(0.02, 0.5, 'Area $\\AA^2$', va='center', rotation='vertical')
         fig.text(0.5, 0.02, 'Nucleotides', ha='center')
         name = filename2.split("/")[-1]
         plt.savefig("plot_maxplot_"+columns[identity]+name+".png")
@@ -1626,7 +1730,7 @@ class Rna_analysis:
 
 
     # Get the cos^2(theta) for each carbon in the selection, for sn1
-    
+
     def individual_order_sn1(self, sel, lipid, n_chain):
         # Define list to store the chain cos^2(theta)
         chains = []
@@ -1645,10 +1749,10 @@ class Rna_analysis:
 
             # Define a list to store atoms
             lista = []
-            
+
             for selection in selections:
                 atoms = sel.select_atoms(selection)
-                
+
 
                 if atoms.n_atoms != 0:
                     lista.append(atoms)
@@ -1658,11 +1762,11 @@ class Rna_analysis:
         return chains
 
 
-    
+
 
 
     # Get the cos^2(theta) for each carbon in the selection, for sn2
-    
+
     def individual_order_sn2(self, sel, lipid, n_chain):
         # Define list to store the chain cos^2(theta)
         chains = []
@@ -1684,10 +1788,10 @@ class Rna_analysis:
                     selections[1] = "name H101"
             # Define a list to store atoms
             lista = []
-            
+
             for selection in selections:
                 atoms = sel.select_atoms(selection)
-                
+
 
                 if atoms.n_atoms != 0:
                     lista.append(atoms)
@@ -1696,12 +1800,12 @@ class Rna_analysis:
             if len(angles) > max_v:
                 max_v = len(angles)
             chains.append(angles)
-            
+
         #for i in range(len(chains)):
         #    print(len(chains[i]))
         #    while len(chains[i]) < max_v:
         #        chain[i].append(np.nan)
-        
+
         chains = np.array(chains) # Expect array of dim (n_chain, n_lipids)
         #print("Individual_order_sn2:",chains.shape )
         return chains
@@ -1775,7 +1879,7 @@ class Rna_analysis:
             data_tilt["z"] = -data_tilt["z"]
         # Get the z axis
         data_tilt["angle"] = np.arccos(data_tilt["z"])
-                
+
         print(file_surf_vect,"data tilt:",data_tilt)
         print(table_closest)
         print(ha_com)
@@ -1786,8 +1890,8 @@ class Rna_analysis:
         for index, row in table_closest.iterrows():
             ha_pos = ha_com.loc[row["resname"]].to_numpy()[:2]
             data_tilt["dist_temp"] = np.linalg.norm(temp_pos0 - ha_pos, axis = 1)
-            threshold = np.sqrt(row["area"]/np.pi) 
-            
+            threshold = np.sqrt(row["area"]/np.pi)
+
             temp_df = data_tilt[data_tilt["dist_temp"] < threshold]
             print(temp_df)
             temp_df = temp_df.sort_values(by = "dist_temp")
@@ -1819,22 +1923,22 @@ class Rna_analysis:
             ax_p.legend(loc = "lower center", ncols = 2)
         else:
             plt.ylabel("Mean angle [Deg]")
-            plt.xlabel("Radius [$\AA$]")
+            plt.xlabel("Radius [$\\AA$]")
             plt.legend(loc = "lower center", ncols = 2)
 
         plt.savefig(filename)
 
         return df_data_nts
-        
-
-                
 
 
 
 
-                
 
-                    
+
+
+
+
+
     # Method to average vector to pseudovector program
     @staticmethod
     def average_vector(data, min_lenght):
@@ -1852,7 +1956,7 @@ class Rna_analysis:
             else:
                 result.append([np.nan, np.nan, np.nan])
         result = np.array(result)
-        
+
         return result
 
 
@@ -1872,7 +1976,7 @@ class Rna_analysis:
 
 
 
-    # Computes the average vector for each bin, sample are the raw x,y positions and weights are the vectors related to the head  
+    # Computes the average vector for each bin, sample are the raw x,y positions and weights are the vectors related to the head
     def pseudohistogram2D(self,sample1, weights, bins = 10, v_min = None, v_max = None):
         if v_min == None:
             v_min = np.min(sample1)
@@ -1893,7 +1997,7 @@ class Rna_analysis:
             on_edge = (sample1[:,i] == edges[i][-1])
             Ncount[i][on_edge] -= 1
 
-        
+
         xy = np.ravel_multi_index(Ncount, nbin)
         xy_test = xy.reshape(-1,1)
 
@@ -1916,7 +2020,7 @@ class Rna_analysis:
 
 
 
-    # Computes teh histogram of the average order parameters in each bin 
+    # Computes teh histogram of the average order parameters in each bin
     def histogram2D(self,sample1, weights, n_chain, bins = 10, v_min = None, v_max = None):
         if v_min == None:
             v_min = np.min(sample1)
@@ -1937,7 +2041,7 @@ class Rna_analysis:
             on_edge = (sample1[:,i] == edges[i][-1])
             Ncount[i][on_edge] -= 1
 
-        
+
         xy = np.ravel_multi_index(Ncount, nbin)
         xy_test = xy.reshape(-1,1)
 
@@ -1977,7 +2081,7 @@ class Rna_analysis:
             n_chain1 = n_chain
             n_chain2 = 0
 
-        matrix = [] # this will store a matrix of the shape (2+n_chain, 
+        matrix = [] # this will store a matrix of the shape (2+n_chain,
 
         for ts in self.u.trajectory[start:final:step]:
             z = all_p.positions[:,2]
@@ -1996,7 +2100,7 @@ class Rna_analysis:
                 to_write = np.concatenate([to_write, angles_sn2], axis = 1)
 
             matrix.append(to_write) # Expect dim (n_lipids, 2+n_chain1+n_chain2)
-            #print("Frame:",to_write.shape) 
+            #print("Frame:",to_write.shape)
 
         #matrix = np.array(matrix) # Expect dim (frames, n_lipids, 2+n_chain1+n_chain2)
         matrix = np.concatenate(matrix, axis = 0) # Expect dim (n_lipids*frames, 2+n_chain1+n_chain2)
@@ -2008,11 +2112,11 @@ class Rna_analysis:
 
         return H, edges
 
-        
-        
 
 
-            
+
+
+
 
 
 
@@ -2028,16 +2132,16 @@ class Rna_analysis:
         angles = [] # Store the angles
         for i in (range(len(lista)-1)): # Accounts for variable number of list (Change if the carbon has or not double bonds)
             vectores = lista[i+1].positions - lista[0].positions # Hidrogen - Carbons; output of shape (n_lipids, 3)
-            #print(vectores)            
+            #print(vectores)
             angles.append(vectores)
 
-        
+
         angles = np.concatenate(angles, axis = 0)
 
 
         costheta = angles[:,2]**2/np.linalg.norm(angles, axis = 1)**2 # Compute the costheta^2
-        #print(costheta) 
-        order = np.mean(costheta) # Expect dim = 1, order parameter computer or the corresponding carbon 
+        #print(costheta)
+        order = np.mean(costheta) # Expect dim = 1, order parameter computer or the corresponding carbon
         #print(order)
         return order
 
@@ -2077,7 +2181,7 @@ class Rna_analysis:
 
 
 
-    
+
     def order_sn2(self, sel, lipid, n_chain):
         # Define list to store the chain cos^2(theta)
         chains = []
@@ -2098,10 +2202,10 @@ class Rna_analysis:
                     selections[1] = "name H101"
             # Define a list to store atoms
             lista = []
-            
+
             for selection in selections:
                 atoms = sel.select_atoms(selection)
-                
+
 
                 if atoms.n_atoms != 0:
                     lista.append(atoms)
@@ -2109,11 +2213,12 @@ class Rna_analysis:
             angles = self.get_vectors(lista)
             chains.append(angles)
             #print("sn2", angles, n_chain, [at.n_atoms for at in lista])
-                
-        
+
+
         chains = np.array(chains) # Expect array of dim (n_chain)
         return chains
 
 
 
 
+"""
