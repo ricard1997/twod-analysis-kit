@@ -107,3 +107,19 @@ ENV/
 
 # poetry
 poetry.lock
+
+
+#Additional ignores
+
+*.dat
+*.png
+*.gro
+*.xtc
+*.npz
+*.lock
+*.tpr
+*.pdb
+*.ipynb
+*.swp
+*.vmd
+*.gif
