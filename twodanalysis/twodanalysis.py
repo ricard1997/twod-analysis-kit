@@ -86,6 +86,11 @@ class twod_analysis:
             self.memb = self.u.select_atoms(f"{self.build_resname(list(lipid_list))}")
 
 
+        # Set ercentage for periodicity
+
+        self.periodicity = 0.1
+
+
         # Set radius sizes of different elements
         self.radii_dict = 0
         if add_radii:
@@ -656,8 +661,8 @@ class twod_analysis:
             hist = hist.reshape(nbin)
             hist = hist.astype(float, casting = "safe")
             hist[np.isnan(hist)] = 0
-            #core = 2*(slice(1,-1),)
-            #hist = hist[core]
+            core = 2*(slice(1,-1),)
+            hist = hist[core]
             #print("here", hist[20,:])
             return indexes, hist
 
@@ -1221,8 +1226,13 @@ class twod_analysis:
 
         dist_x = xmax - xmin
         dist_y = ymax - ymin
-        left_add = data[data[:,0] <= xmin + percentage*dist_x] + [dimensions[0],0]
-        right_add = data[data[:,0] >= xmax - percentage*dist_x] - [dimensions[0],0]
+        if len(data[0]) == 2:
+            left_add = data[data[:,0] <= xmin + percentage*dist_x] + [dimensions[0],0]
+            right_add = data[data[:,0] >= xmax - percentage*dist_x] - [dimensions[0],0]
+        else:
+            left_add = data[data[:,0] <= xmin + percentage*dist_x] + [dimensions[0],0,0]
+            right_add = data[data[:,0] >= xmax - percentage*dist_x] - [dimensions[0],0,0]
+
 
         if others is not None:
             temp_right = []
@@ -1241,8 +1251,13 @@ class twod_analysis:
                 others[i] = np.concatenate([others[i], temp_left[i], temp_right[i]], axis = 0)
 
         # Extent in y
-        up_add = data[data[:,1] <= ymin + percentage*dist_y] + [0,dimensions[1]]
-        low_add = data[data[:,1] >= ymax - percentage*dist_y] - [0,dimensions[1]]
+        if len(data[0]) == 2:
+            up_add = data[data[:,1] <= ymin + percentage*dist_y] + [0,dimensions[1]]
+            low_add = data[data[:,1] >= ymax - percentage*dist_y] - [0,dimensions[1]]
+        else:
+            up_add = data[data[:,1] <= ymin + percentage*dist_y] + [0,dimensions[1],0]
+            low_add = data[data[:,1] >= ymax - percentage*dist_y] - [0,dimensions[1],0]
+
 
         if others is not None:
             temp_up = []
@@ -1269,6 +1284,8 @@ class twod_analysis:
                         nbins = 180,
                         height = False,
                         periodic = False,
+                        vmin = None,
+                        vmax = None,
                         ):
         """Compute packing deffects based on packmem: https://doi.org/10.1016/j.bpj.2018.06.025
 
@@ -1280,6 +1297,10 @@ class twod_analysis:
             Number of bins of the xy grid, by default 180
         height : bool, optional
             Store height matrix (To study deepness of th packing defects), by default False
+        vmin : float, optional
+            Store the min value for x and y
+        vmax : float, optional
+            Store the max value for x and y
 
         Returns
         -------
@@ -1293,17 +1314,24 @@ class twod_analysis:
 
 
 
+        if vmin == None:
+            vmin = self.v_min
+        if vmax == None:
+            vmax = self.v_max
 
-
-
-        vmin = self.v_min
-        vmax = self.v_max
+        
+        
         grid_size = abs(vmin - vmax)/nbins
+        n_aug = int(4/grid_size)
+        print("augmentation",n_aug, grid_size)
 
+        # Extend the grid 5 Amstrong to azure all the packing defects are correctly taken
+        vmin_ex = vmin - n_aug * grid_size
+        vmax_ex = vmax + n_aug * grid_size
+        nbins_aug = nbins + 2 * n_aug
 
 
         lipid_list = list(self.lipid_list)
-        non_polarity = self.non_polar_dict
 
 
         print("######### Running packing defects function ########## ")
@@ -1334,9 +1362,9 @@ class twod_analysis:
 
 
         # Create matrix to be filled
-        matrix = np.zeros((nbins+2, nbins+2))
+        matrix = np.zeros((nbins_aug+2, nbins_aug+2))
         if height:
-            matrix_height = np.zeros((nbins+2, nbins+2))
+            matrix_height = np.zeros((nbins_aug, nbins_aug))
         positions = all_p.positions[:,2]
         mean_z = positions.mean()
 
@@ -1347,18 +1375,50 @@ class twod_analysis:
             #print(selection_string)
             layer_at = self.memb.select_atoms(selection_string)
             pos_ats = layer_at.positions
-            if not height:
-                indexes = self.get_indexes(pos_ats[:,:2], nbins)
-            else:
-                indexes, matrix_temp = self.get_indexes(pos_ats, nbins, matrix_height = True)
-
-                matrix_height = np.maximum(matrix_height.copy(), matrix_temp.copy())
-
             elements = layer_at.elements
             names = layer_at.names
 
-            matrix = self.add_deffects(matrix, indexes,elements, names, lipid, mat_radii_dict)
+            if periodic:
+                dims = self.u.trajectory.ts.dimensions[:2]
+                temp = pos_ats.copy()
+                pos_ats, others = self.extend_data(pos_ats, dims, self.periodicity, [elements, names])
+                fig,ax = plt.subplots(1,3, sharex = True, sharey = True)
+                ax[0].scatter(temp[:,0], temp[:,1])
+                ax[0].set_title("before periodic")
+                
+                ax[1].scatter(pos_ats[:,0], pos_ats[:,1])
+                ax[1].set_title("after periodic")
 
+                
+                ax[2].scatter(pos_ats[:,0], pos_ats[:,1], alpha = 0.8)
+                ax[2].scatter(temp[:,0], temp[:,1])
+                ax[2].set_title("both")
+                plt.show()
+                elements = others[0]
+                names = others[1]
+
+            if not height:
+                indexes = self.get_indexes(pos_ats[:,:2], nbins_aug, v_min = vmin_ex, v_max = vmax_ex)
+            else:
+                indexes, matrix_temp = self.get_indexes(pos_ats, nbins_aug, v_min = vmin_ex, v_max = vmax_ex, matrix_height = True)
+                matrix_height = np.maximum(matrix_height.copy(), matrix_temp.copy())
+
+
+            
+            matrix = self.add_deffects(matrix, indexes,elements, names, lipid, mat_radii_dict)
+        core1 = 2*(slice(n_aug+1,-n_aug+1),)
+        core = 2*(slice(n_aug,-n_aug),)
+        matrix = matrix[core1]
+        matrix_height = matrix_height[core]
+        if periodic:
+            n = int((dims[0]/grid_size))
+            matrix = matrix[:n, :n]
+            matrix_height = matrix_height[:n, :n]
+        
+        
+        
+        
+        print(f"Shapeeeeeee::::: {matrix.shape}, {matrix_height.shape}")
         deffects = matrix
         #deffects = np.where(matrix < 1, matrix, np.nan)
         #deffects = np.where(deffects > 0, deffects, np.nan)
