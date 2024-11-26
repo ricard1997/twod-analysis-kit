@@ -1095,7 +1095,7 @@ class twod_analysis:
                 
 
 
-        positions = self.memb.positions[:,2]
+        positions = self.memb.positions[:,:2]
         if all:
             xmin = np.min(positions[:,0])
             xmax = np.max(positions[:,0])
@@ -1209,12 +1209,66 @@ class twod_analysis:
                 small_matrix = small_matrix * 0.0001
             self.add_small_matrix(matrix, small_matrix, indexes[0][i], indexes[1][i])
         return matrix
+    
+    @staticmethod
+    def extend_data(data, dimensions, percentage, others = None):
+        xmin = np.min(data[:,0])
+        xmax = np.max(data[:,0])
+        ymin = np.min(data[:,1])
+        ymax = np.max(data[:,1])
+
+
+
+        dist_x = xmax - xmin
+        dist_y = ymax - ymin
+        left_add = data[data[:,0] <= xmin + percentage*dist_x] + [dimensions[0],0]
+        right_add = data[data[:,0] >= xmax - percentage*dist_x] - [dimensions[0],0]
+
+        if others is not None:
+            temp_right = []
+            temp_left = []
+            for i in range(len(others)):
+                temp_left.append(others[i][data[:,0] <= xmin + percentage*dist_x])
+                temp_right.append(others[i][data[:,0] >= xmax - percentage*dist_x])
+
+
+
+
+        data = np.concatenate([data, left_add, right_add], axis = 0)
+
+        if others is not None:
+            for i in range(len(others)):
+                others[i] = np.concatenate([others[i], temp_left[i], temp_right[i]], axis = 0)
+
+        # Extent in y
+        up_add = data[data[:,1] <= ymin + percentage*dist_y] + [0,dimensions[1]]
+        low_add = data[data[:,1] >= ymax - percentage*dist_y] - [0,dimensions[1]]
+
+        if others is not None:
+            temp_up = []
+            temp_low = []
+            for i in range(len(others)):
+                temp_up.append(others[i][data[:,1] <= ymin + percentage*dist_y])
+                temp_low.append(others[i][data[:,1] >= ymax - percentage*dist_y])
+              
+
+
+        data = np.concatenate([data, up_add, low_add], axis = 0)
+        if others is not None:
+            for i in range(len(others)):
+                others[i] = np.concatenate([others[i], temp_up[i], temp_low[i]], axis = 0)
+
+        if others is not None:
+            return data, others
+        return data
+
 
 
     def packing_defects(self,
                         layer = 'top',
                         nbins = 180,
                         height = False,
+                        periodic = False,
                         ):
         """Compute packing deffects based on packmem: https://doi.org/10.1016/j.bpj.2018.06.025
 
@@ -1270,14 +1324,16 @@ class twod_analysis:
 
 
 
-        #### Loop over trajectory to find the lipids in the requested membrane
+
         pos_data = []
 
+        #### Define radious to be used for the different atoms
         mat_radii_dict = {}
         for atom in self.radii_dict.keys():
             mat_radii_dict[atom] = self.create_circle_array(grid_size, self.radii_dict[atom])
 
 
+        # Create matrix to be filled
         matrix = np.zeros((nbins+2, nbins+2))
         if height:
             matrix_height = np.zeros((nbins+2, nbins+2))
@@ -1290,8 +1346,6 @@ class twod_analysis:
             selection_string = f"byres ((resname {lipid} and name {self.working_lip[lipid]['head']}) and prop z {sign} {mean_z})"
             #print(selection_string)
             layer_at = self.memb.select_atoms(selection_string)
-
-
             pos_ats = layer_at.positions
             if not height:
                 indexes = self.get_indexes(pos_ats[:,:2], nbins)
@@ -1306,8 +1360,8 @@ class twod_analysis:
             matrix = self.add_deffects(matrix, indexes,elements, names, lipid, mat_radii_dict)
 
         deffects = matrix
-        deffects = np.where(matrix < 1, matrix, np.nan)
-        deffects = np.where(deffects > 0, deffects, np.nan)
+        #deffects = np.where(matrix < 1, matrix, np.nan)
+        #deffects = np.where(deffects > 0, deffects, np.nan)
 
         if height:
             matrix_height[matrix_height == 0 ] = np.nan
@@ -1360,8 +1414,13 @@ class twod_analysis:
         print(heads_pos.shape, resnames_pos.shape)
 
         ## Extent data
-        dimensions = self.u.trajectory.ts.dimensions[:3]
+        dimensions = self.u.trajectory.ts.dimensions[:2]
         cons = 0.1
+
+        heads_pos, resnames_pos = self.extend_data(heads_pos, dimensions, cons, others = [resnames_pos])
+        resnames_pos = resnames_pos[0]
+
+        """
         # Extent in x
         left_add = heads_pos[heads_pos[:,0] <= xmin + cons*dist_x] + [dimensions[0],0]
         right_add = heads_pos[heads_pos[:,0] >= xmax - cons*dist_x] - [dimensions[0],0]
@@ -1388,7 +1447,7 @@ class twod_analysis:
         heads_pos = np.concatenate([heads_pos, up_add, low_add], axis = 0)
         resnames_pos = np.concatenate([resnames_pos, up_add_resn, low_add_resn], axis = 0)
         print(heads_pos.shape, resnames_pos.shape)
-
+        """
 
         from scipy.spatial import Voronoi, voronoi_plot_2d
         from scipy.spatial import ConvexHull
