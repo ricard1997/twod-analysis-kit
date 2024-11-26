@@ -1,3 +1,16 @@
+"""
+twod_analysis
+=============
+
+
+Classes
+-------
+
+.. autoclass:: twod_analysis
+    :members:
+"""
+
+
 import MDAnalysis as mda
 import pandas as pd
 import numpy as np
@@ -12,6 +25,7 @@ import nglview as nv
 
 
 class twod_analysis:
+
     def __init__(
                 self,
                 top,
@@ -26,6 +40,35 @@ class twod_analysis:
                 add_radii = False,
                 verbose = False,
             ):
+        """__init__ _summary_
+
+        _extended_summary_
+
+        Parameters
+        ----------
+        top : _type_
+            _description_
+        traj : _type_
+            _description_
+        lipid_list : _type_, optional
+            _description_, by default None
+        tpr : _type_, optional
+            _description_, by default None
+        info : bool, optional
+            _description_, by default False
+        guess_chain_l : bool, optional
+            _description_, by default True
+        chain_info : _type_, optional
+            _description_, by default None
+        v_min : _type_, optional
+            _description_, by default None
+        v_max : _type_, optional
+            _description_, by default None
+        add_radii : bool, optional
+            _description_, by default False
+        verbose : bool, optional
+            _description_, by default False
+        """
 
 
 
@@ -152,11 +195,20 @@ class twod_analysis:
 
 
     def visualize_polarity(self, lipids = "all"):
-        """This function is used to visualize what atoms are considered in polarity
+        """visualize_polarity
 
-        Args:
-            lipids (str or list of str, optional): Lipids to show polarity. Defaults to "all".
+        This function is used to visualize what atoms are considered in polarity
+
+        Parameters
+        ----------
+        lipids : str, optional 
+            Lipids to show polarity, by default "all"
         """
+        
+        
+
+
+
         aspect_ratio = [1, 1, 1]
 
         # Get lipids to work
@@ -466,15 +518,24 @@ class twod_analysis:
 
     @staticmethod
     def get_highest(data, min_lenght):
-        """Code to get the highest value given two columns that are to be ordered in a 2D grid
+        """get_highest Code to get the highest value given two columns that are to be ordered in a 2D grid
 
-        Args:
-            data (ndarray(:,2)): Array with two columns (column1: map to a 2D grid, column2: values)
-            min_lenght (int): Size of squares in the 2D grid
 
-        Returns:
-            ndarray(:,2): With the maximun of each grid square
+
+        Parameters
+        ----------
+        data : (ndarray(:,2))
+            Array with two columns (column1: map to a 2D grid, column2: values)
+        min_lenght : (int)
+            Size of squares in the 2D grid
+
+        Returns
+        -------
+        ndarray(:,2)
+            With the maximun of each grid square
         """
+        
+
         columns = ["index", "weight"] # Data expected is an np array with columns ["index", "x", "y", "z"]
         df = pd.DataFrame(data, columns = columns)
         result = df.groupby('index', as_index=False)['weight'].max()
@@ -720,22 +781,40 @@ class twod_analysis:
                         final = None,
                         step = 1,
                         plot = False):
-        """Find the 2D order parameters for all lipids
+        """all_lip_order Find the 2D order parameters for all lipids
 
-        Args:
-            layer (str): Layer, can be top, bot, both
-            nbins (int): number of bins
-            v_min (float, optional): min value for the grid. Defaults to None.
-            v_max (float, optional): max value for the grid. Defaults to None.
-            all_head (_type_, optional): _description_. Defaults to None.
-            start (int, optional): start frame. Defaults to None.
-            final (int, optional): final frame. Defaults to None.
-            step (int, optional): step. Defaults to 1.
-            plot (Bool, optional): plot the resulting matrix. Defaults to False
+     
 
-        Returns:
-            ndarray(n,n), ndarray(n+1): matrix containing the 2d order, edges of the matrix
+        Parameters
+        ----------
+        layer : (str)
+            Layer, can be top, bot, both
+        nbins : (int)
+            number of bins
+        v_min : _(float, optional), optional
+            min value for the grid, by default None
+        v_max : (float, optional), optional
+            max value for the grid, by default None
+        all_head : (mda selection, optional), optional
+            heads to be considered, by default None
+        start : (int, optional), optional
+            start frame, by default None
+        final : (int, optional), optional
+            final frame, by default None
+        step : (int, optional), optional
+            step, by default 1
+        plot : bool, optional
+            plot the resulting matrix, by default False
+
+        Returns
+        -------
+        ndarray(n,n), ndarray(n+1)
+            matrix containing the 2d order, edges of the matrix
         """
+
+
+
+
 
         lipid_list = list(self.lipid_list)
         lipid_list.remove("CHL1")
@@ -776,18 +855,31 @@ class twod_analysis:
                 filename = None, include_charge = False):
         """Code to loop over the trajectory and print [x,y,z(referenced to zmean), charge] in a file.
 
-        Args:
-            start (int, optional): Start Frame. Defaults to None.
-            final (int, optional): Final frame. Defaults to None.
-            step (int, optional): Frames to skip. Defaults to None.
-            lipid (str, optional): Lipid to work. Defaults to "DSPC".
-            layer (str, optional): Layer to work. Defaults to 'top'.
-            filename (str, optional): filename to write data. Defaults to None.
-            include_charge (bool, optional): Include or not charge. Defaults to False.
+        
+        Parameters
+        ----------
+        start : int, optional
+            Start Frame, by default None
+        final : int, optional
+            Final frame, by default None
+        step : int, optional
+            Frames to skip, by default None
+        lipid : str, optional
+             Lipid to work, by default "DSPC"
+        layer : str, optional
+            Layer to work, by default 'top'
+        filename : str, optional
+            filename to write data, by default None
+        include_charge : bool, optional
+            Include or not charge, by default False
 
-        Returns:
-            _type_: _description_
+        Returns
+        -------
+        _type_
+            _description_
         """
+
+
         if start == None:
             start = self.start
         if final == None:
@@ -859,20 +951,31 @@ class twod_analysis:
 
 
     def height_matrix(self, lipids, layer,start = None, final = None, step = None, nbins = 50, clean = True):
-        """Code to divide the space in a 2D grid and compute the height referenced to zmean
+        """ Code to divide the space in a 2D grid and compute the height referenced to zmean
 
-        Args:
-            lipids (list(str)): Lipids to include in the height analysis
-            layer (str): Working layer for thickness
-            start (int, optional): Frame to start analysis. Defaults to None.
-            final (int, optional): Final frame for the analysis. Defaults to None.
-            step (int, optional): Steps to skip. Defaults to None.
-            nbins (int, optional): Number of bins to divide the grid space. Defaults to 50.
-            clean (bool, optional): Decide if rerun and overwrite surface generated files. Defaults to True.
+        Parameters
+        ----------
+        lipids : list(str)
+            Lipids to include in the height analysis
+        layer : str
+            Working layer for thickness
+        start : int, optional
+            Frame to start analysis, by default None
+        final : int, optional
+            Final frame for the analysis, by default None
+        step : int, optional
+            Steps to skip, by default None
+        nbins : int, optional
+            Number of bins to divide the grid space, by default 50
+        clean : bool, optional
+            Decide if rerun and overwrite surface generated files, by default True
 
-        Returns:
-            ndarray(nbins,nbins): Retun a matrix with the height information
+        Returns
+        -------
+        ndarray(nbins,nbins)
+            Retun a matrix with the height information
         """
+
 
         if start == None:
             start = self.start
@@ -899,7 +1002,7 @@ class twod_analysis:
             data.append(df_data)
 
         data = pd.concat(data, axis = 0)
-        print(data)
+        #print(data)
         xmin = data["x"].min()
         xmax = data["x"].max()
         ymin = data["y"].min()
@@ -929,15 +1032,26 @@ class twod_analysis:
 
     def thickness(self, nbins, start = 0, final=-1, step = 1):
         """Find the thichness mapped in a 2d grid
-        Args:
-            nbins (int): number of bins for thickness
-            start (int, optional): Start frame. Defaults to 0.
-            final (int, optional): Final frame. Defaults to -1.
-            step (int, optional): Step frame. Defaults to 1.
 
-        Returns:
-            np.array, np.array: Matrix with the thickness, edeges for the matrix
+        Parameters
+        ----------
+        nbins : int
+            number of bins for thickness
+        start : int, optional
+            Start frame, by default 0
+        final : int, optional
+            Final frame, by default -1
+        step : int, optional
+            Step frame, by default 1
+
+        Returns
+        -------
+        np.array, np.array
+            Matrix with the thickness, edeges for the matrix
         """
+
+
+
         lipids = list(self.lipid_list)
         lipids.remove("CHL1")
         matrix_up, edges = self.height_matrix(lipids,
@@ -967,9 +1081,20 @@ class twod_analysis:
     def guess_minmax_space(self, all = False):
         """Check the minimun and max position in x,y
 
-        Returns:
-            float, float: minimun and max position in x,y
+        Parameters
+        ----------
+        all : bool, 
+            If True return the max and min in each axis(x,y), else returns inly a minimun and maximun, by default False
+
+        Returns
+        -------
+        float, float
+            minimun and max position in x,y
         """
+
+                
+
+
         positions = self.memb.positions[:,2]
         if all:
             xmin = np.min(positions[:,0])
