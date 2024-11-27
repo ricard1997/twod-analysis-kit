@@ -626,21 +626,31 @@ class twod_analysis:
     def get_indexes(self,
                     data,
                     bins = 10,
-                    v_min = None,
-                    v_max = None,
+                    edges = None,
                     matrix_height = False):
+                    
 
-        if v_min == None:
-            v_min = self.v_min
-        if v_max == None:
-            v_max = self.v_max
+
+        if edges is not None:
+            xmin = edges[0]
+            xmax = edges[1]
+            ymin = edges[2]
+            ymax = edges[3]
+        else:
+            xmin = self.v_min
+            ymin = self.v_min
+            xmax = self.v_max
+            ymax = self.v_max
+
+
+        ran = [[xmin,xmax],[ymin,ymax]]
 
 
         nbin = np.empty(2,np.intp)
         edges = 2*[None]
 
         for i in range(2):
-            edges[i] = np.linspace(v_min, v_max, bins +1)
+            edges[i] = np.linspace(ran[i][0], ran[i][1], bins +1)
             nbin[i] = len(edges[i]) + 1
 
 
@@ -1286,6 +1296,8 @@ class twod_analysis:
                         periodic = False,
                         vmin = None,
                         vmax = None,
+                        custom_minmax = None,
+                        area = True,
                         ):
         """Compute packing deffects based on packmem: https://doi.org/10.1016/j.bpj.2018.06.025
 
@@ -1297,6 +1309,8 @@ class twod_analysis:
             Number of bins of the xy grid, by default 180
         height : bool, optional
             Store height matrix (To study deepness of th packing defects), by default False
+        periodic : bool, optional
+            Defines if using periodicity or not. When True, takes into acount periodicity and returns a 2D grid with of the size of the periodic box, by default False
         vmin : float, optional
             Store the min value for x and y
         vmax : float, optional
@@ -1319,6 +1333,11 @@ class twod_analysis:
         if vmax == None:
             vmax = self.v_max
 
+
+
+            
+
+
         
         
         grid_size = abs(vmin - vmax)/nbins
@@ -1329,6 +1348,21 @@ class twod_analysis:
         vmin_ex = vmin - n_aug * grid_size
         vmax_ex = vmax + n_aug * grid_size
         nbins_aug = nbins + 2 * n_aug
+
+
+
+        edges = [vmin,vmax]
+
+
+        if custom_minmax is not None:
+            xmin = custom_minmax[0]
+            xmax = custom_minmax[1]
+            ymin = custom_minmax[2]
+            ymax = custom_minmax[3]
+            xmin_ex = xmin - n_aug * grid_size
+            xmax_ex = xmax + n_aug * grid_size
+            ymin_ex = ymin - n_aug * grid_size
+            ymax_ex = ymax + n_aug * grid_size
 
 
         lipid_list = list(self.lipid_list)
@@ -1367,7 +1401,7 @@ class twod_analysis:
             matrix_height = np.zeros((nbins_aug, nbins_aug))
         positions = all_p.positions[:,2]
         mean_z = positions.mean()
-
+        dims = self.u.trajectory.ts.dimensions[:2]
         for lipid in self.lipid_list:
 
 
@@ -1379,21 +1413,8 @@ class twod_analysis:
             names = layer_at.names
 
             if periodic:
-                dims = self.u.trajectory.ts.dimensions[:2]
-                temp = pos_ats.copy()
+                #temp = pos_ats.copy()
                 pos_ats, others = self.extend_data(pos_ats, dims, self.periodicity, [elements, names])
-                fig,ax = plt.subplots(1,3, sharex = True, sharey = True)
-                ax[0].scatter(temp[:,0], temp[:,1])
-                ax[0].set_title("before periodic")
-                
-                ax[1].scatter(pos_ats[:,0], pos_ats[:,1])
-                ax[1].set_title("after periodic")
-
-                
-                ax[2].scatter(pos_ats[:,0], pos_ats[:,1], alpha = 0.8)
-                ax[2].scatter(temp[:,0], temp[:,1])
-                ax[2].set_title("both")
-                plt.show()
                 elements = others[0]
                 names = others[1]
 
@@ -1406,27 +1427,52 @@ class twod_analysis:
 
             
             matrix = self.add_deffects(matrix, indexes,elements, names, lipid, mat_radii_dict)
-        core1 = 2*(slice(n_aug+1,-n_aug+1),)
+        #print(f"Shapeeeeeee::::: {matrix.shape}, {matrix_height.shape}, dims {dims}")
+        core1 = 2*(slice(n_aug+1,-(n_aug+1)),)
         core = 2*(slice(n_aug,-n_aug),)
         matrix = matrix[core1]
-        matrix_height = matrix_height[core]
+
+            
+        #print(f"Shapeeeeeee::::: {matrix.shape}, {matrix_height.shape}, dims {dims}")
+
+
         if periodic:
-            n = int((dims[0]/grid_size))
+            n = round((dims[0]/grid_size))
+            print(n, dims[0]/grid_size, grid_size)
+            vmax = vmin + n*grid_size
             matrix = matrix[:n, :n]
             matrix_height = matrix_height[:n, :n]
+            edges = [vmin,vmax]
         
         
         
         
-        print(f"Shapeeeeeee::::: {matrix.shape}, {matrix_height.shape}")
+        #print(f"Shapeeeeeee::::: {matrix.shape}, {matrix_height.shape}, dims {dims}")
         deffects = matrix
-        #deffects = np.where(matrix < 1, matrix, np.nan)
+        deffects = np.where(matrix < 1, matrix, np.nan)
         #deffects = np.where(deffects > 0, deffects, np.nan)
+        
 
+        return_dict = {
+            "edges" : edges,
+        }
+
+        if area:
+            non_nan = ~np.isnan(deffects)
+            count = np.sum(non_nan)
+            area_v = count*grid_size*grid_size
+            area_tot = (deffects.shape[0])**2 * grid_size*grid_size
+
+        return_dict["area"] = {"deffects" : area_v,
+                               "total": area_tot}
+        print(return_dict)
         if height:
+            matrix_height = matrix_height[core]
             matrix_height[matrix_height == 0 ] = np.nan
-            return deffects, matrix_height
-        return deffects
+            return deffects, matrix_height, return_dict
+        
+
+        return deffects, return_dict
 
 
 
