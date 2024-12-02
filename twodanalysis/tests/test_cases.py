@@ -10,6 +10,7 @@ import nglview as nv
 from twodanalysis import twod_analysis
 import imageio
 import os
+import time
 
 
 
@@ -40,45 +41,73 @@ lipid_list = list(membrane.lipid_list)
 first_lipids = membrane.first_lipids
 
 ######### Lipid order 2d code related ########
-
+"""
 layers = ["top", "bot", "both"]
 lipid_list.remove("CHL1")
 nbins = 50
 lipids = membrane.chain_info
-"""
+
 for layer in layers:
     for key in lipid_list:
-        H, edges = membrane.order_histogram(key, layer, nbins, lipids[key])
+        start_time = time.time()
+        H, edges = membrane.order_histogram(key, layer, nbins, lipids[key], start=60, final=100)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print(f"Elapsed time: {elapsed_time:.6f} seconds")
+
+
         print(key, layer, nbins, lipids[key], 0, 180)
         plt.imshow(H,cmap = "Spectral", extent = [edges[0][0], edges[0][-1], edges[1][0], edges[1][-1]])
         plt.colorbar(cmap = "Spectral")
         plt.savefig(f"{key}_test1_{layer}.png")
+        plt.show()
         plt.close()
+        start_time = time.time()
+        H1, edges = membrane.order_histogram(key, layer, nbins, lipids[key], start=60, final=100, method = "numpy")
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print(f"Elapsed time: {elapsed_time:.6f} seconds")
+
+        print(key, layer, nbins, lipids[key], 0, 180)
+        plt.imshow(H1,cmap = "Spectral", extent = [edges[0], edges[-1], edges[0], edges[-1]])
+        plt.colorbar(cmap = "Spectral")
+        plt.savefig(f"{key}_test2_{layer}.png")
+
+        plt.show()
+        plt.close()
+
+        plt.scatter(H.flatten(), H1.flatten())
+        plt.show()
+
+
+
+
+layer = "top"
+"""
+"""
+mat_top, edges = membrane.all_lip_order("top", nbins,
+                        start = 60,
+                        final = 100,
+                        step = 1)#
+
+
+mat_bot, edges = membrane.all_lip_order("bot", nbins,
+                        start = 60,
+                        final = 100,
+                        step = 1)
+
+mat_both, edges = membrane.all_lip_order("both", nbins,
+                        start = 60,
+                        final = 100,
+                        step = 1)
+
+plt.imshow(mat_top, cmap = "Spectral")
+plt.show()
+plt.imshow(mat_bot, cmap = "Spectral")
+plt.show()
+plt.imshow(mat_both, cmap = "Spectral")
 plt.show()
 """
-layer = "top"
-#mat_top, edges = membrane.all_lip_order("top", nbins,
-#                        start = 0,
-#                        final = 100,
-#                        step = 1)#
-
-
-#mat_bot, edges = membrane.all_lip_order("bot", nbins,
-#                        start = 0,
-#                        final = 100,
-#                        step = 1)
-
-#mat_both, edges = membrane.all_lip_order("both", nbins,
-#                        start = 0,
-#                        final = 100,
-#                        step = 1)
-
-#plt.imshow(mat_top, cmap = "Spectral")
-#plt.show()
-#plt.imshow(mat_top, cmap = "Spectral")
-#plt.show()
-
-
 
 
 ##### Packing deffects related ######
@@ -155,6 +184,8 @@ plt.close()
 
 percentage = []
 for ts in membrane.u.trajectory[51:500:2]:
+
+    start_time = time.time()
     matrix, return_dict = membrane.packing_defects(
                                     nbins = 150,
                                     layer = "bot",
@@ -163,6 +194,9 @@ for ts in membrane.u.trajectory[51:500:2]:
                                     area = True,
                                     edges = [80,120,40,80]
                                     )
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Elapsed time: {elapsed_time:.6f} seconds")
 
 
     edges = return_dict["edges"]
@@ -172,12 +206,12 @@ for ts in membrane.u.trajectory[51:500:2]:
     area = f" deffects: {return_dict['area']['deffects']}, total {return_dict['area']['total']} "
     area_p = f"percentage : {return_dict['area']['deffects']/return_dict['area']['total']}"
     percentage.append(return_dict['area']['deffects']/return_dict['area']['total'])
-    fig,ax = plt.subplots(1,2)
-    ax[0].imshow(np.rot90(matrix), extent = [edges[0], edges[1], edges[0], edges[1]])
+    #fig,ax = plt.subplots(1,2)
+    #ax[0].imshow(np.rot90(matrix), extent = [edges[0], edges[1], edges[0], edges[1]])
     #ax[1].imshow(np.rot90(matrix_height), extent = [edges[0], edges[1], edges[0], edges[1]])
-    ax[0].set_title(f"Frame {count}, area {area_p}")
-    plt.savefig(f"frame_{count}_periodic.png")
-    plt.close()
+    #ax[0].set_title(f"Frame {count}, area {area_p}")
+    #plt.savefig(f"frame_{count}_periodic.png")
+    #plt.close()
 
     filenames.append(f"frame_{count}_periodic.png")
     count += 1
