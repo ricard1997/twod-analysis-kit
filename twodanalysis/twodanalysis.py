@@ -209,21 +209,13 @@ class twod_analysis:
         lipids : str, optional 
             Lipids to show polarity, by default "all"
         """
-        
-        
-
-
-
         aspect_ratio = [1, 1, 1]
-
         # Get lipids to work
         if lipids == "all":
             lipids = self.lipid_list
         else:
             if isinstance(lipids, list):
                 lipids = [lipids]
-
-
         #Guess bonds if needed
         try:
             self.u.bonds
@@ -238,7 +230,6 @@ class twod_analysis:
             return
         else:
             nplots = len(lipids)
-
             fig = plt.figure(figsize=(5 * nplots, 5))
 
 
@@ -462,6 +453,22 @@ class twod_analysis:
 
     @staticmethod
     def count_order(data, min_lenght, n_chain):
+        """ Function used to count and average the order parameter in each grid square
+
+        Parameters
+        ----------
+        data : ndarray(n,2 + len(n_chain[0]) or 2 + len(n_chain[0]) +len(n_chain[1])) 
+            Array that contains the order parameters data to be averaged.
+        min_lenght : int
+            size of the data
+        n_chain : int or list
+            Sets the number of carbons in the fatty acida chain
+
+        Returns
+        -------
+        _np.array
+            Array containing the mean SCD for each grid square
+        """
         columns = ["index"]
         carbons_sn2 = False
         try:
