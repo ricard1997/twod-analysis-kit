@@ -1294,10 +1294,9 @@ class twod_analysis:
                         nbins = 180,
                         height = False,
                         periodic = False,
-                        vmin = None,
-                        vmax = None,
-                        custom_minmax = None,
+                        edges = None,
                         area = True,
+                        count = True,
                         ):
         """Compute packing deffects based on packmem: https://doi.org/10.1016/j.bpj.2018.06.025
 
@@ -1324,45 +1323,47 @@ class twod_analysis:
             If height === True: matrix with packing deffects, amtrix with height information
         """
 
-
-
-
-
-        if vmin == None:
-            vmin = self.v_min
-        if vmax == None:
-            vmax = self.v_max
-
-
-
-            
+        if edges is not None:
+            xmin = edges[0]
+            xmax = edges[1]
+            ymin = edges[2]
+            ymax = edges[3]
+            dx = xmax-xmin
+            dy = ymax-ymin
+            if int(dx) != int(dy):
+                print(dx,dy)
+                print("Distances in x and y must be equal")
+                return
+        else:
+            xmin = self.v_min
+            ymin = self.v_min
+            xmax = self.v_max
+            ymax = self.v_max
 
 
         
         
-        grid_size = abs(vmin - vmax)/nbins
+        grid_size = abs(xmin - xmax)/nbins
         n_aug = int(4/grid_size)
         print("augmentation",n_aug, grid_size)
 
         # Extend the grid 5 Amstrong to azure all the packing defects are correctly taken
-        vmin_ex = vmin - n_aug * grid_size
-        vmax_ex = vmax + n_aug * grid_size
+
+        xmin_ex = xmin - n_aug * grid_size
+        xmax_ex = xmax + n_aug * grid_size
+        ymin_ex = ymin - n_aug * grid_size
+        ymax_ex = ymax + n_aug * grid_size
+        #vmin_ex = vmin - n_aug * grid_size
+        #vmax_ex = vmax + n_aug * grid_size
         nbins_aug = nbins + 2 * n_aug
 
 
 
-        edges = [vmin,vmax]
+        edges = [xmin,xmax,ymin,ymax]
 
 
-        if custom_minmax is not None:
-            xmin = custom_minmax[0]
-            xmax = custom_minmax[1]
-            ymin = custom_minmax[2]
-            ymax = custom_minmax[3]
-            xmin_ex = xmin - n_aug * grid_size
-            xmax_ex = xmax + n_aug * grid_size
-            ymin_ex = ymin - n_aug * grid_size
-            ymax_ex = ymax + n_aug * grid_size
+
+
 
 
         lipid_list = list(self.lipid_list)
@@ -1419,9 +1420,9 @@ class twod_analysis:
                 names = others[1]
 
             if not height:
-                indexes = self.get_indexes(pos_ats[:,:2], nbins_aug, v_min = vmin_ex, v_max = vmax_ex)
+                indexes = self.get_indexes(pos_ats[:,:2], nbins_aug, edges=[xmin_ex,xmax_ex,ymin_ex,ymax_ex])
             else:
-                indexes, matrix_temp = self.get_indexes(pos_ats, nbins_aug, v_min = vmin_ex, v_max = vmax_ex, matrix_height = True)
+                indexes, matrix_temp = self.get_indexes(pos_ats, nbins_aug, edges=[xmin_ex,xmax_ex,ymin_ex,ymax_ex], matrix_height = True)
                 matrix_height = np.maximum(matrix_height.copy(), matrix_temp.copy())
 
 
@@ -1439,10 +1440,12 @@ class twod_analysis:
         if periodic:
             n = round((dims[0]/grid_size))
             print(n, dims[0]/grid_size, grid_size)
-            vmax = vmin + n*grid_size
+            xmax = xmin + n*grid_size
+            ymax = ymin + n*grid_size
             matrix = matrix[:n, :n]
-            matrix_height = matrix_height[:n, :n]
-            edges = [vmin,vmax]
+            if height:
+                matrix_height = matrix_height[:n, :n]
+            edges = [xmin,xmax,ymin,ymax]
         
         
         
@@ -1462,9 +1465,24 @@ class twod_analysis:
             count = np.sum(non_nan)
             area_v = count*grid_size*grid_size
             area_tot = (deffects.shape[0])**2 * grid_size*grid_size
-
-        return_dict["area"] = {"deffects" : area_v,
+            return_dict["area"] = {"deffects" : area_v,
                                "total": area_tot}
+        
+        if count:
+            from scipy.ndimage import label
+            binary_matrix = ~np.isnan(deffects)
+            structure = np.array([[1,1,1], [1,1,1], [1,1,1]])
+            labeled_array, num_features = label(binary_matrix, structure = structure)
+            cluster_sizes = np.bincount(labeled_array.ravel())[1:]
+            return_dict["count"] = {"number":num_features, "sizes":cluster_sizes}
+            
+            cluster_sizes  = cluster_sizes[cluster_sizes>10]
+            plt.hist(cluster_sizes, bins=40)
+            plt.show()
+
+
+
+        
         print(return_dict)
         if height:
             matrix_height = matrix_height[core]
