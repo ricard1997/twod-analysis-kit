@@ -273,6 +273,81 @@ class twod_analysis:
 
 
 
+    ############## Order parameters related code ####################
+
+
+
+
+    def order_histogram(self, lipid, layer, n_grid,
+                        n_chain,
+                        v_min = None,
+                        v_max = None,
+                        all_head = None,
+                        start = None,
+                        final = None,
+                        step = 1):
+
+        if all_head == None:
+            all_head = self.all_head
+        if start == None:
+            start = self.start
+        if final == None:
+            final = self.final
+
+        if layer == "top":
+            sign = " > "
+        elif layer == "bot":
+            sign = " < "
+
+        try:
+            n_chain1 = n_chain[1]
+            n_chain2 = n_chain[0]
+        except:
+            n_chain1 = n_chain
+            n_chain2 = 0
+
+        matrix = [] # this will store a matrix of the shape (2+n_chain,
+        for ts in self.u.trajectory[start:final:step]:
+            z = all_head.positions[:,2]
+            z_mean = z.mean() # get middel of the membrane
+
+            #Pick atoms in the layer
+            if layer == "both":
+                layer_at = self.memb.select_atoms(f"byres ((resname {lipid} and name {self.working_lip[lipid]['head']}))")
+            else:
+                layer_at = self.memb.select_atoms(f"byres ((resname {lipid} and name {self.working_lip[lipid]['head']}) and prop z {sign} {z_mean})")
+            #print("Info:", all_head.n_atoms, z_mean, layer.n_atoms)
+
+            only_p = layer_at.select_atoms(f"name {self.working_lip[lipid]['head']}")
+            positions = only_p.positions[:,:2]
+            angles_sn1 = self.individual_order_sn1(layer_at, lipid, n_chain1)
+            angles_sn1 = angles_sn1.T
+
+            print(angles_sn1.T.shape, positions.shape)
+            print(angles_sn1.shape, positions.shape)
+            to_write = np.concatenate([positions, angles_sn1], axis = 1)
+            if n_chain2 != 0:
+                angles_sn2 = self.individual_order_sn2(layer_at, lipid, n_chain2)
+                angles_sn2 = angles_sn2.T
+                to_write = np.concatenate([to_write, angles_sn2], axis = 1)
+
+            matrix.append(to_write) # Expect dim (n_lipids, 2+n_chain1+n_chain2)
+            #print("Frame:",to_write.shape)
+
+        #matrix = np.array(matrix) # Expect dim (frames, n_lipids, 2+n_chain1+n_chain2)
+        matrix = np.concatenate(matrix, axis = 0) # Expect dim (n_lipids*frames, 2+n_chain1+n_chain2)
+        v_min = self.v_min
+        v_max = self.v_max
+
+        H, edges = self.histogram2D(matrix[:,:2], matrix[:,2:], n_chain, bins = n_grid, v_min = v_min, v_max = v_max)
+        H = np.rot90(H)
+        H[H==0] = np.nan
+
+        return H, edges.
+
+
+
+
 
     @staticmethod
     def get_individual(lista
@@ -449,6 +524,67 @@ class twod_analysis:
 
         chains = np.array(chains) # Expect array of dim (n_chain, n_lipids)
         return chains
+    
+
+
+    # Computes teh histogram of the average order parameters in each bin
+    def histogram2D(self,sample1, weights, n_chain, bins = 10, v_min = None, v_max = None):
+        """ Computes the 2D histogram of 2D data with various values taking an average of them
+
+        Parameters
+        ----------
+        sample1 : np.array(n,2)
+            2D data information
+        weights : np.array(n,m)
+            m values can be attached to the data (usually lenght of the tails)
+        n_chain : int or list
+            Number of carbons in each chain, e.g, 16 or [16,16] for both chains
+        bins : int, optional
+            Number of bins to split the space, by default 10
+        v_min : float, optional
+            Min value of the 2D grid, by default None
+        v_max : float, optional
+            Max value of the 2D grid, by default None
+
+        Returns
+        -------
+        np.array, np.array
+            matrix containining the averaged 2D histogram, edges corresponding to te matrix
+        """
+        if v_min == None:
+            v_min = np.min(sample1)
+        if v_max == None:
+            v_max = np.max(sample1)
+
+        #print(v_min, v_max)
+        nbin = np.empty(2,np.intp)
+        edges = 2*[None]
+
+        for i in range(2):
+            edges[i] = np.linspace(v_min, v_max, bins +1)
+            nbin[i] = len(edges[i]) + 1
+
+        Ncount = (tuple(np.searchsorted(edges[i], sample1[:,i], side = "right") for i in range(2)))
+
+        for i in range(2):
+            on_edge = (sample1[:,i] == edges[i][-1])
+            Ncount[i][on_edge] -= 1
+
+        xy = np.ravel_multi_index(Ncount, nbin)
+        xy_test = xy.reshape(-1,1)
+
+        xy_test = np.concatenate((xy_test, weights), axis = 1)
+
+        hist = self.count_order(xy_test, nbin.prod(), n_chain)
+        hist = hist.reshape(nbin)
+        hist = hist.astype(float, casting = "safe")
+        core = 2*(slice(1,-1),)
+        hist = hist[core]
+
+        return hist, edges
+
+
+
 
 
     @staticmethod
@@ -595,39 +731,7 @@ class twod_analysis:
 
         return hist, edges
 
-    # Computes teh histogram of the average order parameters in each bin
-    def histogram2D(self,sample1, weights, n_chain, bins = 10, v_min = None, v_max = None):
-        if v_min == None:
-            v_min = np.min(sample1)
-        if v_max == None:
-            v_max = np.max(sample1)
 
-        #print(v_min, v_max)
-        nbin = np.empty(2,np.intp)
-        edges = 2*[None]
-
-        for i in range(2):
-            edges[i] = np.linspace(v_min, v_max, bins +1)
-            nbin[i] = len(edges[i]) + 1
-
-        Ncount = (tuple(np.searchsorted(edges[i], sample1[:,i], side = "right") for i in range(2)))
-
-        for i in range(2):
-            on_edge = (sample1[:,i] == edges[i][-1])
-            Ncount[i][on_edge] -= 1
-
-        xy = np.ravel_multi_index(Ncount, nbin)
-        xy_test = xy.reshape(-1,1)
-
-        xy_test = np.concatenate((xy_test, weights), axis = 1)
-
-        hist = self.count_order(xy_test, nbin.prod(), n_chain)
-        hist = hist.reshape(nbin)
-        hist = hist.astype(float, casting = "safe")
-        core = 2*(slice(1,-1),)
-        hist = hist[core]
-
-        return hist, edges
 
     # Computes  and return the indexes of the data if where arranegd in a 2d histogram
     def get_indexes(self,
@@ -695,73 +799,6 @@ class twod_analysis:
         return indexes
 
 
-
-    def order_histogram(self, lipid, layer, n_grid,
-                        n_chain,
-                        v_min = None,
-                        v_max = None,
-                        all_head = None,
-                        start = None,
-                        final = None,
-                        step = 1):
-
-        if all_head == None:
-            all_head = self.all_head
-        if start == None:
-            start = self.start
-        if final == None:
-            final = self.final
-
-        if layer == "top":
-            sign = " > "
-        elif layer == "bot":
-            sign = " < "
-
-        try:
-            n_chain1 = n_chain[1]
-            n_chain2 = n_chain[0]
-        except:
-            n_chain1 = n_chain
-            n_chain2 = 0
-
-        matrix = [] # this will store a matrix of the shape (2+n_chain,
-        for ts in self.u.trajectory[start:final:step]:
-            z = all_head.positions[:,2]
-            z_mean = z.mean() # get middel of the membrane
-
-            #Pick atoms in the layer
-            if layer == "both":
-                layer_at = self.memb.select_atoms(f"byres ((resname {lipid} and name {self.working_lip[lipid]['head']}))")
-            else:
-                layer_at = self.memb.select_atoms(f"byres ((resname {lipid} and name {self.working_lip[lipid]['head']}) and prop z {sign} {z_mean})")
-            #print("Info:", all_head.n_atoms, z_mean, layer.n_atoms)
-
-            only_p = layer_at.select_atoms(f"name {self.working_lip[lipid]['head']}")
-            positions = only_p.positions[:,:2]
-            angles_sn1 = self.individual_order_sn1(layer_at, lipid, n_chain1)
-            angles_sn1 = angles_sn1.T
-
-            print(angles_sn1.T.shape, positions.shape)
-            print(angles_sn1.shape, positions.shape)
-            to_write = np.concatenate([positions, angles_sn1], axis = 1)
-            if n_chain2 != 0:
-                angles_sn2 = self.individual_order_sn2(layer_at, lipid, n_chain2)
-                angles_sn2 = angles_sn2.T
-                to_write = np.concatenate([to_write, angles_sn2], axis = 1)
-
-            matrix.append(to_write) # Expect dim (n_lipids, 2+n_chain1+n_chain2)
-            #print("Frame:",to_write.shape)
-
-        #matrix = np.array(matrix) # Expect dim (frames, n_lipids, 2+n_chain1+n_chain2)
-        matrix = np.concatenate(matrix, axis = 0) # Expect dim (n_lipids*frames, 2+n_chain1+n_chain2)
-        v_min = self.v_min
-        v_max = self.v_max
-
-        H, edges = self.histogram2D(matrix[:,:2], matrix[:,2:], n_chain, bins = n_grid, v_min = v_min, v_max = v_max)
-        H = np.rot90(H)
-        H[H==0] = np.nan
-
-        return H, edges
 
     @staticmethod
     def build_resname(resnames_list):
