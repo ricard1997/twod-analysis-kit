@@ -27,7 +27,7 @@ tpr = "../../../../veamos.tpr"
 
 # Creating the class
 
-membrane = twod_analysis(top,
+membrane = Memb2D(top,
                          traj,
                         tpr=tpr,
                         verbose = True,

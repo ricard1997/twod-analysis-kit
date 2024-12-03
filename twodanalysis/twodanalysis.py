@@ -6,11 +6,9 @@ Class created mainly to analyze lipid membranes in different ways
 Classes
 -------
 
-.. autoclass:: twod_analysis
+.. autoclass:: Memb2D
     :members:
     :show-inheritance:
-
-
 
 
 """
@@ -29,7 +27,7 @@ import nglview as nv
 
 
 
-class twod_analysis:
+class Memb2D:
 
     def __init__(
                 self,
