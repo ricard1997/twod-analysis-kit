@@ -880,9 +880,6 @@ class twod_analysis:
     @staticmethod
     def get_highest(data, min_lenght):
         """get_highest Code to get the highest value given two columns that are to be ordered in a 2D grid
-
-
-
         Parameters
         ----------
         data : (ndarray(:,2))
@@ -916,6 +913,27 @@ class twod_analysis:
                     bins = 10,
                     edges = None,
                     matrix_height = False):
+        """given data in 2D, the code returns the indexes to locate the data in the 2D grid defined by edges and bins
+
+        Parameters
+        ----------
+        data : ndarray(n,2 o 3)
+            Data in 2D fashion, (3 columns if height = True)
+        bins : int, optional
+            number of bins of the grid, by default 10
+        edges : list, optional
+            Edges in the following way [xmin,xmax,ymin,ymax], by default None
+        matrix_height : bool, optional
+            returns the height matrix (matrix with only the lipids closer to water), by default False
+
+        Returns
+        -------
+        tuple
+            tuple with the indexes 
+        
+        tuple, ndarray(bins,bins)
+            tuple with indexes and 2D data of the highest point
+        """
                     
 
 
