@@ -1,13 +1,18 @@
 """
 twod_analysis
 =============
-
+Class created mainly to analyze lipid membranes in different ways
 
 Classes
 -------
 
 .. autoclass:: twod_analysis
     :members:
+    :show-inheritance:
+
+
+
+
 """
 
 
@@ -437,7 +442,7 @@ class twod_analysis:
 
     # Get the cos^2(theta) for each carbon in the selection, for sn1
     def individual_order_sn1(self, sel, lipid, n_chain):
-        r"""
+        """
 
         Code to loop over the number of carbons_summary_ in the lipid tail and get a list with the carbon and its
         hydrogens for each carbon in the lipid tail: :math:`[C3i, HiX, HiY, ...]`. This list is passed to get_vectors which
@@ -1600,7 +1605,7 @@ class twod_analysis:
 
     @staticmethod
     def get_highest(data, min_lenght):
-        """get_highest Code to get the highest value given two columns that are to be ordered in a 2D grid
+        """ Code to get the highest value given two columns that are to be ordered in a 2D grid
         Parameters
         ----------
         data : (ndarray(:,2))
