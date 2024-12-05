@@ -1,5 +1,5 @@
 """
-twod_analysis
+Memb2D
 =============
 Class created mainly to analyze lipid membranes in different ways
 
@@ -1135,14 +1135,10 @@ class Memb2D:
                         final = final,
                         step = step,
                         nbins = nbins)
-        mat_thickness = np.sum(np.array([matrix_up, matrix_bot]),axis = 0)
+        mat_thickness = matrix_bot + matrix_up
         mat_thickness[mat_thickness == 0] = np.nan
         #print(mat_thickness,mat_thickness.shape,matrix_bot.shape,[edges[0], edges[-1], edges[0], edges[-1]])
-        plt.close()
-        plt.imshow(mat_thickness[1:-1,1:-1] ,cmap = "Spectral", extent = [edges[0], edges[-1], edges[0], edges[-1]])
-        plt.colorbar(cmap = "Spectral")
-        plt.savefig(f"all_lip_thick_.png")
-        plt.close()
+
         return mat_thickness, edges
 
 
