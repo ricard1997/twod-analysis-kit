@@ -7,7 +7,7 @@ from scipy.integrate import simps
 import time
 from matplotlib.patches import Patch
 import nglview as nv
-from twodanalysis import twod_analysis
+from twodanalysis import Memb2D
 import imageio
 import os
 import time
@@ -39,6 +39,9 @@ membrane = Memb2D(top,
 
 lipid_list = list(membrane.lipid_list)
 first_lipids = membrane.first_lipids
+
+
+
 
 ######### Lipid order 2d code related ########
 """
