@@ -18,3 +18,5 @@ def mdanalysis_logo_text() -> str:
     with open(MDANALYSIS_LOGO, "r", encoding="utf8") as f:
         logo_text = f.read()
     return logo_text
+
+
