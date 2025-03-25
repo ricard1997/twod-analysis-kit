@@ -116,6 +116,9 @@ class MembProp:
 
         }
 
+        #self.connection_chains = self.connection_chains if connection_chains is None else connection_chains
+        for lip in connection_chains:
+            self.connection_chains[lip] = connection_chains[lip]
 
         for lipid in self.lipid_list:
             test_lips = self.working_lip.keys()
@@ -123,7 +126,7 @@ class MembProp:
                 self.working_lip[lipid] = {"head" : "P", "charge" : 0}
                 self.connection_chains[lipid] = [("C21", "C22"), ("C31", "C32")]
 
-        self.connection_chains = self.connection_chains if connection_chains is None else connection_chains
+
         self.working_lip = self.working_lip if working_lip is None else working_lip
         self.all_head = self.memb.select_atoms(self.build_resname(self.lipid_list) + " and name P")
 
