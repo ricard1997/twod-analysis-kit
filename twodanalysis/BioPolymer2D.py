@@ -26,6 +26,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import colors
 from matplotlib.lines import Line2D
 import sys
+import logging
 
 
 
@@ -296,8 +297,9 @@ class BioPolymer2D:
             None if ``inplace=True``, numpy array if inplace=False with the positions of the center of mass of residues (if pos_type="COM") or positions of all atoms (pos_type="all")
         """
 
-        print('Getting positions from frame',self.startF, 'to', self.endF,'with steps of',self.stepF)
-
+        logging.debug('Getting positions from frame',self.startF, 'to', self.endF,'with steps of',self.stepF)
+        if select is None and getselection:
+            logging.warning("Ignoring `getselection=True` since `select` is None.")
         ag=self.atom_group
         if select:
             ag=self.universe.select_atoms(select)
@@ -366,7 +368,7 @@ class BioPolymer2D:
             return np.array(com)
 
     @staticmethod
-    def FilterMinFrames(pos, zlim,Nframes,control_plots=False):
+    def FilterMinFrames(pos, zlim,Nframes,control_plots=False,getNframes=False):
         """Selects a set of ``Nframes`` in which the AtomGroup is closer to the surface and bellow a zlim threshold distance to the surface.
 
         Parameters
@@ -379,6 +381,8 @@ class BioPolymer2D:
             Nframes closest to the surface within the frames where the AtomGroup is < zlim.
         control_plots : bool, optional
             If control plots are to be shown, by default False
+        getNframes : bool, optional
+            If True, returns the number of frames selected, by default False
 
         Raises
         ------
@@ -415,7 +419,11 @@ class BioPolymer2D:
             plt.plot(pos[:,ires,0],pos[:,ires,3],)
             plt.plot(pos_masked[:,ires,0],pos_masked[:,ires,3],'.',ms=2)
             plt.show()
-        return pos_masked
+        if getNframes:
+            return pos_masked, len(pos_masked)
+        else:
+            return pos_masked
+
 
     def PolarAnalysis(self,select_res,Nframes, zlim=14,max_hist=None,sort=None,ax=None,plot=False,control_plots=False,Nbins=1000,resolution=5):
         """Makes a Polar Histogram of the positions of the center of mass of ``select_res`` residues considering ``Nframes`` closest to the surface within the < zlim threshold. 
@@ -651,11 +659,11 @@ class BioPolymer2D:
 
         # Define the classic color cycle
         colors = ['b', 'm', 'c', 'r', 'g', 'y', 'k']
-        rg_arr=np.zeros((len(self.pos),4))
+        rg_arr=np.zeros((len(self.universe.trajectory[self.startF:self.endF:self.stepF]),4))
         i=0
         masses=self.atom_group.atoms.masses
         total_mass=np.sum(masses)
-
+        # This section could be optimized to use previously computed positions and coms to avoid recomputing them 
         for ts in self.universe.trajectory[self.startF:self.endF:self.stepF]:
             rg_arr[i,0]=ts.time/1000
             rgs=self.computeRG2D(masses, total_mass)
@@ -668,11 +676,11 @@ class BioPolymer2D:
             plt.plot(rg_arr[:,0], rg_arr[:,3], label=legend_names[2],color=colors[2])
             plt.legend()
             plt.xlabel('Time (ns)')
-            plt.ylabel('Radius of gyration ($\mathrm{\AA}$)')
+            plt.ylabel(r'Radius of gyration ($\mathrm{\AA}$)')
             # plt.show()
         return rg_arr
 
-    def RgPerpvsRgsPar(self,rgs,color, marker='s',plot='both',ax=None,legend=True,show=False,mfc='k',markersize=10):
+    def RgPerpvsRgsPar(self,rgs,color, marker='s',plot='both',ax=None,legend=True,show=False,mfc='k',markersize=10,system_label=None):
         r"""Generates :math:`R_{g\perp}` vs. :math:`R_{g\parallel}` plots. Also, returns the :math:`\langle R_{g\perp}^2 \rangle /\langle R_{g\parallel}^2 \rangle` ratio
 
         Parameters
@@ -695,12 +703,14 @@ class BioPolymer2D:
             Set marker face color. Color options are intrinsic colors used in Matplotlib library. 
         markersize : int, optional
             Size of colors. Uses the same values as intrinsic values of Matplotlib library. 
+        system_label : str, optional
+            Label to assign to the system in the legend. If None, the system name is used. By default None
         
         Raises
         ------
         KeyError
             Error raised if ``plot`` is different than 'data', 'mean' or 'both'.
-
+            Error raised if ``legend=True``,``system_label`` is None and the system name is not defined.
         Returns
         -------
         float
@@ -709,17 +719,21 @@ class BioPolymer2D:
         data=rgs[:,2:]
         print(data.shape)
         rg_ratio=(data[:,0]**2).mean()/(data[:,1]**2).mean()
-
+        if system_label is None:
+            system_label=self.system_name
+            
         if ax is None:
             fig, ax = plt.subplots()  # Create a new figure and axes if not provided
         if plot=='both':
-            label='%s (%.3f)'%(self.system_name,rg_ratio)
+            label='%s (%.3f)'%(system_label,rg_ratio)
             ax.plot(data[:,1],data[:,0],'o',markersize=1,c=color,)
             ax.plot(data[:,1].mean(),data[:,0].mean(),marker,markersize=markersize, label=label,color='k',mfc=mfc)
         elif plot=='data':
-            ax.plot(data[:,1],data[:,0],'o',markersize=1,c=color,)
+            label='%s (%.3f)'%(system_label,rg_ratio)
+            ax.plot(data[:,1],data[:,0],'o',markersize=1,c=color)
+            ax.plot([], [], 'o', c=color,label=label)  # Add a single label for all data points
         elif plot=='mean':
-            label='%s (%.3f)'%(self.system_name,rg_ratio)
+            label='%s (%.3f)'%(system_label,rg_ratio)
             # ax.plot(data[:,1].mean(),data[:,0].mean(),label=label,**kwargs)
             ax.plot(data[:,1].mean(),data[:,0].mean(),marker,markersize=markersize, label=label,color='k',mfc=mfc)
         else:
@@ -727,7 +741,10 @@ class BioPolymer2D:
         ax.set_xlabel(r'$Rg_\parallel$ ($\mathrm{\AA}$)')
         ax.set_ylabel(r'$Rg_\perp$ ($\mathrm{\AA}$)')
         if legend:
-            ax.legend(title=r'Syst ($\langle Rg_\perp^2\rangle /\langle Rg_\parallel^2 \rangle$)', fontsize=10)
+            if not system_label is None:
+                ax.legend(title=r'Syst ($\langle Rg_\perp^2\rangle /\langle Rg_\parallel^2 \rangle$)', fontsize=10)
+            else:
+                raise KeyError("Must indicate the system name with `system_name` attribute to make a legend, or assign a label to the system with `system_label` parameter.")
         if show:
             plt.show()
         return rg_ratio
@@ -867,6 +884,7 @@ class BioPolymer2D:
             # plt.pause(2)
             if control_plots:
                 plt.pause(2)
+        plt.gca().set_aspect('equal', 'box')
         if not show:
             plt.close()
         if inplace:
@@ -913,8 +931,8 @@ class BioPolymer2D:
             return Areas
         
         
-    def KDEAnalysisSelection(self,select_res,Nframes,zlim=15,ax=None,show=False,legend=False,plot_COM=True):
-        """KDE Contours for a set of selected residues. This computes the paths of all the contour levels of each residue.
+    def KDEAnalysisSelection(self,select_res,Nframes,zlim=15,ax=None,show=False,legend=False,plot_COM=True,getNframes=False):
+        r"""KDE Contours for a set of selected residues. This computes the paths of all the contour levels of each residue.
 
         Parameters
         ----------
@@ -933,6 +951,8 @@ class BioPolymer2D:
         plot_COM : bool, optional
             Whether or not to plot the center of mass of ``select_res``. Particularly relevant if comparing results with ``PolarAnalysis`` method, 
             since this will be the center of the polar histograms if ``select_res`` are the same in both analysis. By default True
+        getNframes : bool, optional
+            If True, returns the number of frames selected, by default False
 
         Returns
         -------
@@ -955,8 +975,10 @@ class BioPolymer2D:
         # ListPaths(vertices,codes,plot_paths=True)
         # print(RBM.residues)
         # print(pos.shape)
-
-        all_pos_selected=self.FilterMinFrames(pos_res_contour, zlim,Nframes,control_plots=False)
+        if getNframes:
+            all_pos_selected,n_used_frames=self.FilterMinFrames(pos_res_contour, zlim,Nframes,control_plots=False,getNframes=True)
+        else:
+            all_pos_selected=self.FilterMinFrames(pos_res_contour, zlim,Nframes,control_plots=False)
         print(all_pos_selected.shape)
         # all_pos_selected_reshaped=np.reshape(all_pos_selected,(all_pos_selected.shape[0]*all_pos_selected.shape[1],4))
         # print(all_pos_selected_reshaped.shape)
@@ -999,7 +1021,10 @@ class BioPolymer2D:
             plt.legend(handles=handles, labels=resnames, loc='upper right')
         if show:
             plt.show()
-        return paths_arr_arr, res
+        if getNframes:
+            return paths_arr_arr, res, n_used_frames
+        else:
+            return paths_arr_arr, res
 
     def getHbonds(self,selection1,selection2, update_selections=True,trj_plot=False, inplace=True ):
         """Computes H-bonds between to selection1 and selection2 of the trajectory using MDAnalysis.analysis.hydrogenbonds.HydrogenBondAnalysis.
@@ -1077,7 +1102,7 @@ class BioPolymer2D:
         sorted : bool, optional
             If True, returns data sorted by number of H-bonds. By default True
         unique_res : bool, optional
-            Whether or not to consider only one hydrogen bond per residue. Important to consider percentage in which a participates in some H-bond. By default False
+            Whether or not to consider only one hydrogen bond per residue. Important to consider percentage in which a residue participates in a H-bond. By default False
         Returns
         -------
         pandas.DataFrame
@@ -1109,21 +1134,37 @@ class BioPolymer2D:
             return df_final.sort_values('Count', ascending=False)
         else:
             return df_final
-    def plotHbondsPerResidues(self, paths_for_contour,top=-1,contour_lvls_to_plot=None, contour_colors=None,filter=None, print_table=True,show=False,ax=None):
+    def plotHbondsPerResidues(self,
+                            paths_for_contour,
+                            max_circle_size=160,
+                            top=-1,contour_lvls_to_plot=None,
+                            contour_colors=None,
+                            contour_ls=None,
+                            contour_alphas=None,
+                            filter=None,
+                            print_table=True,
+                            show=False,
+                            ax=None):
         """Makes a figure showing the center of mass of the residues with H-bonds. Figure shows a contour plot as a reference of position of the whole molecule. Legend of the Figure shows the percentage of time in which there were Hbonds during the simulation of the plotted residues.
 
         Parameters
         ----------
         paths_for_contour : list
             List of paths of all the contour levels.
+        max_circle_size : int, optional
+            Maximum size of the circle representing the residue with most H-bonds. By default 160
         top : int, optional
             Residues are plotted ranked by residues with most contact to least. This parameters indicates how many residues to plot of these ranked residues, e.g. top=5 wil plot the 5 residues with most Hbonds during the simulations. By default -1, plots all the residues with H-bonds.
         contour_lvls_to_plot : list, optional
             Contour Levels to show in plot, by default None
         contour_colors : list, optional
             Colors to use to show the reference contour levels.This list must be the same size than `contour_lvls_to_plot` parameter. Default None, which all reference contour plots are shown in black.
-        contour_lvls_to_plot : str or list, optional
-            Residue names to be filtered out of the plot and the output table.
+        contour_ls : list, optional
+            Line style of the contour levels. Default is a solid line.
+        contour_alphas : list, optional
+            Transparency of the contour levels. Default is 0.3.
+        filter : str, optional
+            Filter out a residue from the plot. By default None
         print_table : bool, optional
             Whether or not to print the pandas.DataFrame table with the data shown in figure, by default True
         ax : matplotlib.axes.Axes, optional
@@ -1158,11 +1199,16 @@ class BioPolymer2D:
             contour_lvls_to_plot=range(len(paths_for_contour))
         if not contour_colors:
             contour_colors=['k' for _ in paths_for_contour]
+        if not contour_ls:
+            contour_ls=['-' for _ in  paths_for_contour]
+        if not contour_alphas:
+            contour_alphas=[0.3 for _ in  paths_for_contour]
         if ax is None:
             fig,ax = plt.subplots()  # Create a new figure and axes if not provided
 
-        for lvl,c in zip(contour_lvls_to_plot,contour_colors):
-            self.plotPathsInLevel(paths_for_contour,lvl,color=c,ax=ax)
+        for lvl,c,i in zip(contour_lvls_to_plot,contour_colors, range(len(contour_lvls_to_plot))):
+            # self.plotPathsInLevel(paths_for_contour,lvl,color=c,ax=ax)
+            self.plotPathsInLevel(paths_for_contour,lvl,ax=ax,ls=contour_ls[i],alpha=contour_alphas[i])
 
         colors = ['C%s' % i for i in range(10)]  # Define color palette
         num_colors = len(colors)
@@ -1176,7 +1222,7 @@ class BioPolymer2D:
                     label='%s-%s (%.2f)'%(sorted_df['ResIDs'].iloc[i],
                                         sorted_df['ResNames'].iloc[i],
                                         norm_val*100),)
-            ax.scatter(pos['X'],pos['Y'], s=(8*20*norm_val_plot)**2, alpha=.5, color=color)
+            ax.scatter(pos['X'],pos['Y'], s=(max_circle_size*norm_val_plot)**2, alpha=.5, color=color)
         ax.set_xlabel(r'X-axis($\AA$)',)#fontsize=20)
         ax.set_ylabel(r'Y-axis($\AA$)',)#fontsize=20)
         plt.gca().set_aspect('equal')
@@ -1188,7 +1234,7 @@ class BioPolymer2D:
         return sorted_df
 
     @staticmethod
-    def plotPathsInLevel(paths, contour_lvl,color='k',alpha=0.3,show=False,ax=None):
+    def plotPathsInLevel(paths, contour_lvl,color='k',alpha=0.3,ls='-',lw=None,show=False,ax=None,):
         """Plots the paths of a given contour level.
 
         Parameters
@@ -1211,7 +1257,8 @@ class BioPolymer2D:
         paths_in_lvl=paths[contour_lvl]
         for p in range(len(paths_in_lvl)):
             x_val,y_val=paths_in_lvl[p].T
-            ax.plot(x_val,y_val,color=color, alpha=alpha)
+            ax.plot(x_val,y_val,color=color, alpha=alpha,ls=ls,linewidth=lw)
+            # ax.plot(x_val,y_val,**kwargs)
         if show:
             plt.show()
 
