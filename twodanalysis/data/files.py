@@ -8,17 +8,50 @@ Use as ::
 
 """
 
-__all__ = [
-    "MDANALYSIS_LOGO",  # example file of MDAnalysis logo
-]
+#__all__ = [
+#    "MDANALYSIS_LOGO",  # example file of MDAnalysis logo
+#]
 
 import importlib.resources
-
+import pooch
 data_directory = importlib.resources.files("twodanalysis") / "data"
 
-MDANALYSIS_LOGO = data_directory / "mda.txt"
-MEMBRANE_XTC = data_directory / "membrane_new.xtc"
-MEMBRANE_TPR = data_directory / "veamos.tpr"
-MD_NOWATER_TPR = data_directory / "md_nowater.tpr"
-MD_NOWATER_PDB = data_directory / "md_nowater.pdb"
-MD_TRAJ = data_directory / "trajout.xtc"
+
+
+
+#MDANALYSIS_LOGO = data_directory / "mda.txt"
+
+
+
+
+
+MEMBRANE_XTC = pooch.retrieve(
+    url="https://zenodo.org/records/14834046/files/md_membrane_nowater.xtc",
+    known_hash=None,
+)
+MEMBRANE_TPR = pooch.retrieve(
+    url="https://zenodo.org/records/14834046/files/md_membrane_nowater.tpr",
+        known_hash=None,
+)
+
+
+MD_NOWATER_TPR = pooch.retrieve(
+    url="https://zenodo.org/records/14834046/files/md_biopolymer_nowater.tpr",
+        known_hash=None,
+)
+MD_NOWATER_PDB = pooch.retrieve(
+    url="https://zenodo.org/records/14834046/files/md_biopolymer_nowater.pdb",
+        known_hash=None,
+)
+MD_TRAJ = pooch.retrieve(
+    url="https://zenodo.org/records/14834046/files/md_biopolymer_nowater.xtc",
+        known_hash=None,
+)
+
+
+import MDAnalysis as mda
+
+universe = mda.Universe(MEMBRANE_TPR, MEMBRANE_XTC)
+
+atoms = universe.select_atoms("all")
+print(atoms)
