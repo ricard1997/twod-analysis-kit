@@ -7,7 +7,7 @@ import pytest
 import time
 
 
-from twodanalysis import Memb2D
+#from twodanalysis import Memb2D
 #import imageio
 import os
 import time
