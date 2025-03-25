@@ -1,12 +1,12 @@
-"""
-Location of data files
-======================
+#"""
+#Location of data files
+#======================
 
-Use as ::
+#Use as ::
 
-    from twodanalysis.data.files import *
+#    from twodanalysis.data.files import *
 
-"""
+#"""
 
 #__all__ = [
 #    "MDANALYSIS_LOGO",  # example file of MDAnalysis logo
