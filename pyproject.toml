@@ -44,9 +44,9 @@ doc = [
     "sphinx_rtd_theme",
 ]
 
-# [project.urls]
-# source = "https://github.com/monjegroup/twod-analysis-kit"
-# documentation = "https://twod-analysis-kit.readthedocs.io"
+[project.urls]
+source = "https://github.com/monjegroup/twod-analysis-kit"
+documentation = "https://twodanalysis.readthedocs.io/"
 
 [tool.setuptools.packages.find]
 include = ["twodanalysis"]
@@ -61,7 +61,7 @@ testpaths = [
 line-length = 80
 
 [tool.versioningit]
-default-version = "1+unknown"
+default-version = "1.0.0"
 
 [tool.versioningit.vcs]
 method = "git"
