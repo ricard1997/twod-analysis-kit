@@ -117,8 +117,9 @@ class MembProp:
         }
 
         #self.connection_chains = self.connection_chains if connection_chains is None else connection_chains
-        for lip in connection_chains:
-            self.connection_chains[lip] = connection_chains[lip]
+        if connection_chains is not None:
+            for lip in connection_chains:
+                self.connection_chains[lip] = connection_chains[lip]
 
         for lipid in self.lipid_list:
             test_lips = self.working_lip.keys()

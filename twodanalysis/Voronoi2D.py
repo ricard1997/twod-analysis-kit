@@ -442,6 +442,7 @@ class Voronoi2D(MembProp):
         final = self.final if final is None else final
         step = self.step if step is None else step
         nbins = self.nbins if nbins is None else nbins
+        edges = self.edges if edges is None else edges
 
 
 
@@ -586,20 +587,9 @@ class Voronoi2D(MembProp):
         if lipid_list is None:
             lipid_list = list(self.lipid_list)
 
-        if nbins is None:
-            nbins = self.nbins
+        nbins = self.nbins if nbins is None else nbins
+        edges = self.edges if edges is None else edges
 
-        if edges is None:
-            xmin = self.v_min
-            xmax = self.v_max
-            ymin = self.v_min
-            ymax = self.v_max
-            edges = self.edges
-        else:
-            xmin = edges[0]
-            xmax = edges[1]
-            ymin = edges[2]
-            ymax = edges[3]
 
         self.guess_last_cs()
 
@@ -621,7 +611,7 @@ class Voronoi2D(MembProp):
             matrix_height,_ = self.map_voronoi(voronoi_dict["points"],
                                          splay_vect,
                                          nbins,
-                                         [xmin, xmax, ymin, ymax],
+                                         edges,
 
                                          )
 

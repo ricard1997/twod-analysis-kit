@@ -49,9 +49,3 @@ MD_TRAJ = pooch.retrieve(
 )
 
 
-import MDAnalysis as mda
-
-universe = mda.Universe(MEMBRANE_TPR, MEMBRANE_XTC)
-
-atoms = universe.select_atoms("all")
-print(atoms)
