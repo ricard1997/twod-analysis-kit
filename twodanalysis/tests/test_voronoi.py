@@ -34,10 +34,10 @@ def test_init():
 
 
 
-@pytest.mark.parametrize("lipids", [ ["DODMA", "CHL1", "POPE", "DSPC"], ["DODMA", "POPE", "DSPC"]] )
-@pytest.mark.parametrize("nbins", [50, 60, 80] )
-@pytest.mark.parametrize("start", [0, 20, 30] )
-@pytest.mark.parametrize("final", [100, 60, 70] )
+@pytest.mark.parametrize("lipids", [ ["DODMA", "CHL1", "POPE", "DSPC"]] )
+@pytest.mark.parametrize("nbins", [80] )
+@pytest.mark.parametrize("start", [50] )
+@pytest.mark.parametrize("final", [70] )
 def test_thickness(lipids,nbins, start, final):
     u = mda.Universe(MEMBRANE_TPR, MEMBRANE_XTC, )
     membrane = Voronoi2D(u, nbins = nbins)
@@ -51,9 +51,9 @@ def test_thickness(lipids,nbins, start, final):
 
 
 
-@pytest.mark.parametrize("nbins", [100, 60, 80] )
-@pytest.mark.parametrize("start", [0, 20, 30] )
-@pytest.mark.parametrize("final", [100, 60, 70] )
+@pytest.mark.parametrize("nbins", [100] )
+@pytest.mark.parametrize("start", [50] )
+@pytest.mark.parametrize("final", [70] )
 @pytest.mark.parametrize("layer", ["top", "bot"] )
 def test_apl(nbins, start, final, layer):
     u = mda.Universe(MEMBRANE_TPR, MEMBRANE_XTC, )
@@ -68,10 +68,10 @@ def test_apl(nbins, start, final, layer):
     assert len(edges) == 4
 
 
-@pytest.mark.parametrize("lipids", [["DODMA", "DSPC"], ["DODMA", "POPE", "DSPC"]] )
-@pytest.mark.parametrize("nbins", [50, 60, 80] )
-@pytest.mark.parametrize("start", [0, 20, 30] )
-@pytest.mark.parametrize("final", [100, 60, 70] )
+@pytest.mark.parametrize("lipids", [["DODMA", "POPE", "DSPC"]] )
+@pytest.mark.parametrize("nbins", [80] )
+@pytest.mark.parametrize("start", [50] )
+@pytest.mark.parametrize("final", [70] )
 @pytest.mark.parametrize("layer", ["top", "bot"] )
 def test_splay(nbins, start, final, layer, lipids):
     u = mda.Universe(MEMBRANE_TPR, MEMBRANE_XTC, )

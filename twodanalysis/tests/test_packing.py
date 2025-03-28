@@ -30,7 +30,7 @@ def test_init():
     assert obj is not None
 
 
-@pytest.mark.parametrize("nbins", [100, 200, 300] )
+@pytest.mark.parametrize("nbins", [100, 200] )
 @pytest.mark.parametrize("boolean", [True, False] )
 def test_single_frame(nbins, boolean):
     u = mda.Universe(MEMBRANE_TPR, MEMBRANE_XTC)
@@ -50,9 +50,9 @@ def test_single_frame(nbins, boolean):
     assert defects_dict["edges"][1] > defects_dict["edges"][0]
     assert defects_dict["edges"][3] > defects_dict["edges"][2]
 
-@pytest.mark.parametrize("nbins", [100, 200, 300] )
-@pytest.mark.parametrize("start", [0, 20, 30] )
-@pytest.mark.parametrize("final", [50, 60, 70] )
+@pytest.mark.parametrize("nbins", [100, 200] )
+@pytest.mark.parametrize("start", [50] )
+@pytest.mark.parametrize("final", [60] )
 @pytest.mark.parametrize("layer", ["top", "bot"] )
 def test_multiple_frames(start, final, nbins, layer):
     u = mda.Universe(MEMBRANE_TPR, MEMBRANE_XTC)

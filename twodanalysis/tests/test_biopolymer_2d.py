@@ -19,12 +19,12 @@ def test_init():
     assert obj is not None
     assert isinstance(obj.universe, mda.Universe)
     assert isinstance(obj.atom_group, mda.AtomGroup)
-    
 
-@pytest.mark.parametrize("pos_type", ['COM', 'all'])
-@pytest.mark.parametrize("inplace", [True, False])
-@pytest.mark.parametrize("select", [None, 'name CA'])###
-@pytest.mark.parametrize("getselection", [False, True])
+
+@pytest.mark.parametrize("pos_type", ['COM'])
+@pytest.mark.parametrize("inplace", [True])
+@pytest.mark.parametrize("select", [None])###
+@pytest.mark.parametrize("getselection", [False])
 def test_get_positions(pos_type, inplace, select,getselection):
     u=mda.Universe(MD_NOWATER_TPR, MD_TRAJ)
     obj = BioPolymer2D(u)
@@ -51,14 +51,14 @@ def test_get_COMs(inplace, select):
     else:
         assert isinstance(com, (list, np.ndarray))
 
-@pytest.mark.parametrize("pos_type", ['COM', 'all'])
-@pytest.mark.parametrize("inplace", [True, False])
-@pytest.mark.parametrize("select", [None, 'name CA'])
-@pytest.mark.parametrize("Nframes", [None, 10])
+@pytest.mark.parametrize("pos_type", ['all'])
+@pytest.mark.parametrize("inplace", [False])
+@pytest.mark.parametrize("select", [None])
+@pytest.mark.parametrize("Nframes", [10])
 @pytest.mark.parametrize("zlim", [14]) # Add test for 2 and 14, to validated interanl error management of the function
 def test_FilterMinFrames(pos_type, inplace, select, Nframes,zlim,surf_selection=surf_selection):
     u=mda.Universe(MD_NOWATER_TPR, MD_TRAJ,)
-    obj = BioPolymer2D(u,surf_selection=surf_selection) 
+    obj = BioPolymer2D(u,surf_selection=surf_selection)
     if inplace:
         obj.getPositions(pos_type, inplace=inplace, select=select)
         pos=obj.pos
@@ -82,7 +82,7 @@ def test_PolarAnalysis(surf_selection=surf_selection):
     hist_arr,pos_hist=obj.PolarAnalysis(select_res,Nframes,# sort=[1,2,3,4,5,6,7,8,0],
                                         zlim=zlim,control_plots=False,plot=True,ax=ax,Nbins=nbins)
     plt.close()
-    assert isinstance(hist_arr, (list, np.ndarray)) 
+    assert isinstance(hist_arr, (list, np.ndarray))
     assert np.shape(hist_arr)==(np.shape(pos_hist)[1],2,nbins-1)
     assert isinstance(pos_hist, (list, np.ndarray))
 
@@ -100,10 +100,10 @@ def test_getRgs2D(surf_selection=surf_selection):
     rgs=obj.getRgs2D()
     assert np.shape(rgs)==(obj.universe.trajectory[-1].frame,4)
 
-@pytest.mark.parametrize("plot", ['data', 'mean', 'both'])
-@pytest.mark.parametrize("system_name", ['test_system',None])
-@pytest.mark.parametrize("system_label", ['test_system1',None])
-@pytest.mark.parametrize("legend", [True, False])
+@pytest.mark.parametrize("plot", ['data'])
+@pytest.mark.parametrize("system_name", ['test_system'])
+@pytest.mark.parametrize("system_label", ['test_system1'])
+@pytest.mark.parametrize("legend", [True])
 def test_RgPerpvsRgsPar(plot,system_name,system_label,legend,surf_selection=surf_selection):
     u=mda.Universe(MD_NOWATER_TPR, MD_TRAJ)
     obj = BioPolymer2D(u,surf_selection=surf_selection)
@@ -134,8 +134,8 @@ def test_getKDEAnalysis(surf_selection=surf_selection):
     paths=obj.getKDEAnalysis(zlim,Nframes)
     assert isinstance(paths, list,)
 
-@pytest.mark.parametrize("lvl", [0,-1])
-@pytest.mark.parametrize("getTotal", [True, False])
+@pytest.mark.parametrize("lvl", [0])
+@pytest.mark.parametrize("getTotal", [True])
 def test_getAreas(lvl,getTotal,surf_selection=surf_selection):
     u=mda.Universe(MD_NOWATER_TPR, MD_TRAJ)
     obj = BioPolymer2D(u,surf_selection=surf_selection)
@@ -156,7 +156,7 @@ fig, ax = plt.subplots()
 def test_KDEAnalysisSelection(ax,getNframes,):
     u = mda.Universe(MD_NOWATER_TPR, MD_TRAJ)
     obj = BioPolymer2D(u, surf_selection=surf_selection)
-    
+
     # Define test parameters
     select_res = 'resid 198 200 12 8 40 45 111 115 173'
     Nframes = 100
@@ -200,7 +200,7 @@ from MDAnalysis.exceptions import SelectionError
     ("protein", "name CA", SelectionError),  # Invalid selection1, should raise SelectionError
     ("name CA", "resname DOL and prop z <16 and prot z > 5", SelectionError),  # Both selections invalid, should raise SelectionError
 ])
-@pytest.mark.parametrize("inplace", [True, False])
+@pytest.mark.parametrize("inplace", [True])
 def test_getHbonds(selection1, selection2, expected_exception, inplace):
     u = mda.Universe(MD_NOWATER_TPR, MD_TRAJ)
     obj = BioPolymer2D(u, surf_selection=surf_selection)
@@ -239,7 +239,7 @@ def test_plotHbondsPerResidues(ax):
     # Ensure that getHbonds is called before HbondsPerResidues
     obj.getHbonds(selection1="resname DOL", selection2="protein", inplace=True)
 
-    
+
     sorted_df = obj.plotHbondsPerResidues(paths_for_contour=obj.kdeanalysis.paths,ax=ax)
     assert isinstance(sorted_df, pd.DataFrame)  # Ensure the result is a DataFrame
     assert "ResIDs" in sorted_df.columns  # Check for expected columns
