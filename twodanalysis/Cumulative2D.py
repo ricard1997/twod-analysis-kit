@@ -124,9 +124,10 @@ class Cumulative2D(MembProp):
                 layer_at = self.memb.select_atoms(f"byres ((resname {lipid} and name {self.working_lip[lipid]['head']}) and prop z {self.map_layers[layer]} {z_mean})")
             only_p = layer_at.select_atoms(f"name {self.working_lip[lipid]['head']}")
             positions = only_p.positions[:,:2]
-            angles_sn1 = OrderParameters.individual_order_sn1(layer_at, lipid, n_chain1)
-            angles_sn1 = angles_sn1.T
-            positions = np.concatenate([positions, angles_sn1], axis = 1)
+            if n_chain1 !=0:
+                angles_sn1 = OrderParameters.individual_order_sn1(layer_at, lipid, n_chain1)
+                angles_sn1 = angles_sn1.T
+                positions = np.concatenate([positions, angles_sn1], axis = 1)
             if n_chain2 != 0:
                 angles_sn2 = OrderParameters.individual_order_sn2(layer_at, lipid, n_chain2)
                 angles_sn2 = angles_sn2.T
@@ -211,7 +212,7 @@ class Cumulative2D(MembProp):
 
         return hist, limits
 
-    # Computes teh histogram of the average order parameters in each bin
+    # Computes the histogram of the average order parameters in each bin
     def numpyhistogram2D(self,
                          sample1,
                          weights,
@@ -266,7 +267,10 @@ class Cumulative2D(MembProp):
         weights = 1.5*weights-0.5
 
         for chain in n_chain:
+            if chain == 0:
+                continue
             matrix = np.zeros(hist.shape)
+
             for i in range(chain):
                 temp, xedges, yedges = np.histogram2d(sample1[:,0],
                                                       sample1[:,1],
@@ -275,11 +279,13 @@ class Cumulative2D(MembProp):
                                                       range = edges)
                 matrix += np.abs(temp)
             count += 1
+
             matrix = matrix/(chain*hist)
             matrix[matrix == 0] = np.nan
             mat_chain.append(matrix)
 
-        matrix = 0.5*(mat_chain[0] +mat_chain[1])
+        matrix = np.mean(np.array(mat_chain), axis = 0)
+
 
 
         return matrix, [xedges[0],xedges[-1], yedges[0], yedges[-1]]
@@ -349,7 +355,8 @@ class Cumulative2D(MembProp):
                         edges = None,
                         start = None,
                         final = None,
-                        step = None,):
+                        step = None,
+                        chain = "both"):
         """all_lip_order Find the 2D order parameters for all lipids
 
 
@@ -368,8 +375,9 @@ class Cumulative2D(MembProp):
             final frame, by default None
         step : (int, optional), optional
             step, by default 1
-        plot : bool, optional
-            plot the resulting matrix, by default False
+        chain : str, optional
+            If "sn1" computes order parameters for sn1 tail. If "sn2" computes order parameters for
+            sn2 tail. If "both" computes order parameters for both tails as an average of both.
 
         Returns
         -------
@@ -393,10 +401,18 @@ class Cumulative2D(MembProp):
 
 
 
+
         matrices = []
         for key in lipid_list:
-            print(key)
-            H, edges = self.order_matrix(key, layer, nbins, lipids[key],edges,
+
+            n_chain = lipids[key].copy()
+
+            if chain == "sn1":
+                n_chain[0] = 0
+            elif chain == "sn2":
+                n_chain[1] = 0
+
+            H, edges = self.order_matrix(key, layer, nbins, n_chain,edges,
                         start = start,
                         final = final,
                         step = step)
@@ -420,7 +436,8 @@ class Cumulative2D(MembProp):
                 lipid_list = "DSPC",
                 layer = 'top',
                 function = None,
-                splay = False):
+                splay = False,
+                periodic = False):
         """Code to loop over the trajectory and print [x,y,z(referenced to zmean), charge] in a file.
 
 
@@ -461,7 +478,6 @@ class Cumulative2D(MembProp):
 
         ##### Select all the P atoms to find the middle of the membrane
         all_p = self.all_head
-
         if isinstance(lipid_list, list):
             names = f" {self.build_name(self.working_lip[lipid_list[0]]['head'])}"
             selection_string = f"(resname {lipid_list[0]} and {names}) "
@@ -851,7 +867,7 @@ class Cumulative2D(MembProp):
                             final = final,
                             step = step)
 
-        print("We passed")
+
 
         nbins = self.nbins if nbins is None else nbins
         edges = [self.edges[:2], self.edges[2:]] if edges is None else [edges[:2], edges[2:]]
