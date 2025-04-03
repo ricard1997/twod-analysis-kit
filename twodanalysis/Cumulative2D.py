@@ -29,6 +29,7 @@ class Cumulative2D(MembProp):
                 verbose = False,
                 edges = None,
                 nbins = None,
+                periodic = False,
                 ):
 
         super().__init__(universe,
@@ -49,7 +50,7 @@ class Cumulative2D(MembProp):
         self.step = 1
 
         self.nbins = nbins if nbins is not None else 50
-
+        self.periodic = periodic
 
         self.guess_chain_lenght()
 
@@ -114,7 +115,7 @@ class Cumulative2D(MembProp):
             n_chain2 = 0
 
         matrix = [] # this will store a matrix of the shape (2+n_chain,
-        for _ in self.u.trajectory[start:final:step]:
+        for ts in self.u.trajectory[start:final:step]:
             z = all_head.positions[:,2]
             z_mean = z.mean() # get middle of the membrane
             #Pick atoms in the layer
@@ -132,7 +133,16 @@ class Cumulative2D(MembProp):
                 angles_sn2 = OrderParameters.individual_order_sn2(layer_at, lipid, n_chain2)
                 angles_sn2 = angles_sn2.T
                 positions = np.concatenate([positions, angles_sn2], axis = 1)
+            if self.periodic:
+                head_pos = positions[:,:3]
+                carbons = [positions[:,i+3] for i in range(positions.shape[1] - 3)]
+                dimensions = ts.dimensions[:2]
+
+                head_pos, carbons = self.extend_data(head_pos, dimensions, self.periodicity, others = carbons)
+                positions = np.concatenate([head_pos, np.array(carbons).T], axis = 1)
+
             matrix.append(positions) # Expect dim (n_lipids, 2+n_chain1+n_chain2)
+
 
         #matrix = np.array(matrix) # Expect dim (frames, n_lipids, 2+n_chain1+n_chain2)
         matrix = np.concatenate(matrix, axis = 0) # Expect dim (n_lipids*frames, 2+n_chain1+n_chain2)
@@ -436,8 +446,7 @@ class Cumulative2D(MembProp):
                 lipid_list = "DSPC",
                 layer = 'top',
                 function = None,
-                splay = False,
-                periodic = False):
+                splay = False,):
         """Code to loop over the trajectory and print [x,y,z(referenced to zmean), charge] in a file.
 
 
@@ -517,7 +526,7 @@ class Cumulative2D(MembProp):
 
         #### Loop over trajectory to find the lipids in the requested membrane
         pos_data = []
-        for _ in self.u.trajectory[start:final:step]:
+        for ts in self.u.trajectory[start:final:step]:
             positions = all_p.positions[:,2]
             mean_z = positions.mean()
 
@@ -583,6 +592,14 @@ class Cumulative2D(MembProp):
                 mapped_array = mapped_array[:,np.newaxis]
                 atom_pos = np.concatenate((atom_pos, mapped_array), axis=1)
 
+
+            if self.periodic:
+                dimensions = self.u.trajectory.ts.dimensions[:2]
+                head_pos = atom_pos[:,:3]
+                others = [atom_pos[:,i + 3] for i in range(len(columns) - 3)]
+                head_pos, others = self.extend_data(head_pos, dimensions, self.periodicity, others = others)
+                others = np.array(others).T
+                atom_pos = np.concatenate([head_pos, others], axis = 1)
 
 
 
