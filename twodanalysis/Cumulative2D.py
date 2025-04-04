@@ -30,10 +30,14 @@ class Cumulative2D(MembProp):
                 edges = None,
                 nbins = None,
                 periodic = False,
+                working_lip = None,
+                connection_chains = None
                 ):
 
         super().__init__(universe,
                          lipid_list=lipid_list,
+                         connection_chains=connection_chains,
+                         working_lip=working_lip,
                          verbose=verbose)
 
         if edges is None:
