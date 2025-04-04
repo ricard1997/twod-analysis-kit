@@ -21,7 +21,7 @@ import pandas as pd
 from twodanalysis import MembProp
 from scipy.spatial import Voronoi
 from scipy.spatial import ConvexHull
-
+from twodanalysis.analysis import OrderParameters
 
 class Voronoi2D(MembProp):
 
@@ -31,10 +31,14 @@ class Voronoi2D(MembProp):
                 verbose = False,
                 nbins = None,
                 edges = None,
+                connection_chains = None,
+                working_lip = None,
                 ):
         super().__init__(universe,
                          lipid_list=lipid_list,
-                         verbose=verbose)
+                         verbose=verbose,
+                         connection_chains=connection_chains,
+                         working_lip=working_lip)
 
         if edges is None:
             positions = self.all_head.positions[:,:2]
@@ -151,11 +155,12 @@ class Voronoi2D(MembProp):
             resids = lipid_ats.residues.resids
 
             ids, values = function(lipid_ats)
-            mapped_array = np.full_like(resids, np.nan, dtype=float)
+            mapped_array = np.full((len(resids),values.shape[1]), np.nan, dtype=float)
+
             id_to_value = dict(zip(ids, values))
 
             for i, id_ in enumerate(resids):
-                mapped_array[i] = id_to_value.get(id_, np.nan)
+                mapped_array[i,:] = id_to_value.get(id_, np.nan)
             others.append(mapped_array)
             columns_others.append("function")
 
@@ -225,7 +230,7 @@ class Voronoi2D(MembProp):
         voronoi_points : ndarray(:,2)
             [x,y] positions of the points to be considered in the voronoi plot
         voronoi_property : ndarray(:)
-            Areas correspondng to the points
+            Areas corresponding to the points
         nbins : int
             number of bins for the grid
         edges : list(float)
@@ -254,8 +259,13 @@ class Voronoi2D(MembProp):
 
         closest_seed_indices = np.argmin(distances, axis=1).astype(int)
 
-        voronoi_property = np.array(voronoi_property)
-        grid = voronoi_property[closest_seed_indices].reshape(nbins, nbins)
+
+        voronoi_property = np.atleast_2d(voronoi_property)
+        if voronoi_property.shape[0] == 1:
+            voronoi_property.T
+            grid = voronoi_property[closest_seed_indices, :].reshape(nbins, nbins)
+        else:
+            grid = voronoi_property[closest_seed_indices, :].reshape(nbins, nbins,voronoi_property.shape[1])
 
         return grid, edges
 
@@ -625,6 +635,82 @@ class Voronoi2D(MembProp):
         return final_mat, edges
 
 
+    def voronoi_order(self,
+                     lipid,
+                     layer,
+                     n_chain = None,
+                     start = None,
+                     final = None,
+                     step = None,
+                     nbins = None,
+                     edges = None,
+                     ):
+        start = self.start if start is None else start
+        final = self.final if final is None else final
+        step = self.step if step is None else step
+        nbins = self.nbins if nbins is None else nbins
+        edges = self.edges if edges is None else edges
+        def get_ids(lipids):
+
+
+
+            n_chain1 = self.chain_info[lipid][0]
+            n_chain2 = self.chain_info[lipid][1]
+            layer_lip = lipids.select_atoms(f"resname {lipid}")
+            if n_chain1 !=0:
+                angles_sn1 = OrderParameters.individual_order_sn1(layer_lip, lipid, n_chain1)
+                angles_sn1 = angles_sn1.T
+            if n_chain2 !=0:
+                angles_sn2 = OrderParameters.individual_order_sn2(layer_lip, lipid, n_chain2)
+                angles_sn2 = angles_sn2.T
+            angles = np.concatenate([angles_sn1, angles_sn2], axis=1)
+            layer_ids = layer_lip.residues.resids
+
+
+
+
+            return [layer_ids,angles]
+
+        matrices = []
+        for _ in self.u.trajectory[start:final:step]:
+            voronoi_dict = self.voronoi_properties(layer = layer, function = get_ids)
+
+            order_matrix, _ = self.map_voronoi(voronoi_points=voronoi_dict["points"],
+                                            voronoi_property=voronoi_dict["function"],
+                                            nbins=nbins,
+                                            edges=edges,
+                                            )
+
+
+            matrices.append(order_matrix)
+        order = np.nanmean(np.array(matrices), axis=0)
+        chains_order = []
+        old_chain = 0
+        for chain in n_chain:
+            if chain != 0:
+                chains_order.append(np.nanmean(order[:,:,old_chain:old_chain + chain], axis=2))
+            old_chain += chain
+        final_order = np.nanmean(np.array(chains_order), axis = 0)
+        final_order = np.flipud(np.abs(1.5*final_order-0.5))
+        return final_order, edges
+
+    def voronoi_all_lip_order(self,
+                     lipid_list,
+                     layer,
+                     start = None,
+                     final = None,
+                     step = None,
+                     nbins = None,
+                     edges = None,
+                     ):
+        order_matrices = []
+        for lipid in lipid_list:
+            order, edges = self.voronoi_order(lipid, layer=layer,n_chain=self.chain_info[lipid], start = start, final=final, step=step,
+                                              nbins=nbins,
+                                              edges=edges)
+            order_matrices.append(order)
+        order_matrices = np.nanmean(np.array(order_matrices), axis = 0)
+        return order_matrices, edges
 
 
     def project_property(self, function,
@@ -664,6 +750,7 @@ class Voronoi2D(MembProp):
         final = self.final if final is None else final
         step = self.step if step is None else step
         nbins = self.nbins if nbins is None else nbins
+        edges = self.edges if edges is None else edges
         matrices = []
         for _ in self.u.trajectory[start:final:step]:
             voronoi_dict = self.voronoi_properties(layer = layer, function = function)
