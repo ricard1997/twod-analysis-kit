@@ -155,7 +155,13 @@ class Voronoi2D(MembProp):
             resids = lipid_ats.residues.resids
 
             ids, values = function(lipid_ats)
-            mapped_array = np.full((len(resids),values.shape[1]), np.nan, dtype=float)
+
+            second_dim = 1
+            if isinstance(values, np.ndarray) and np.atleast_2d(values).shape[0] != 1:
+                second_dim = values.shape[1]
+
+
+            mapped_array = np.full((len(resids), second_dim), np.nan, dtype=float)
 
             id_to_value = dict(zip(ids, values))
 
@@ -271,9 +277,9 @@ class Voronoi2D(MembProp):
         voronoi_property = np.atleast_2d(voronoi_property)
         if voronoi_property.shape[0] == 1:
             voronoi_property = voronoi_property.T
-            grid = voronoi_property[closest_seed_indices, :].reshape(nbins1, nbins2)
+            grid = voronoi_property[closest_seed_indices, :].reshape(nbins2, nbins1)
         else:
-            grid = voronoi_property[closest_seed_indices, :].reshape(nbins1, nbins2,voronoi_property.shape[1])
+            grid = voronoi_property[closest_seed_indices, :].reshape(nbins2, nbins1,voronoi_property.shape[1])
 
         return grid, edges
 
@@ -776,12 +782,13 @@ class Voronoi2D(MembProp):
         for _ in self.u.trajectory[start:final:step]:
             voronoi_dict = self.voronoi_properties(layer = layer, function = function)
             property_vect = voronoi_dict["function"]
-            matrix_height,_ = self.map_voronoi(voronoi_dict["points"],
+            matrix,_ = self.map_voronoi(voronoi_dict["points"],
                                          property_vect,
                                          nbins,
                                          edges,
                                          )
-            matrices.append(matrix_height)
+            matrices.append(matrix)
+
         final_mat = np.nanmean(np.array(matrices), axis = 0)
         final_mat = np.flipud(final_mat)
         return final_mat, edges
