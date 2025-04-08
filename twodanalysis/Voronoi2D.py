@@ -650,20 +650,21 @@ class Voronoi2D(MembProp):
         step = self.step if step is None else step
         nbins = self.nbins if nbins is None else nbins
         edges = self.edges if edges is None else edges
+
+
         def get_ids(lipids):
-
-
-
-            n_chain1 = self.chain_info[lipid][0]
-            n_chain2 = self.chain_info[lipid][1]
+            n_chain1 = self.chain_info[lipid][0] if n_chain is None else n_chain[0]
+            n_chain2 = self.chain_info[lipid][1] if n_chain is None else n_chain[1]
             layer_lip = lipids.select_atoms(f"resname {lipid}")
+            angles = []
             if n_chain1 !=0:
                 angles_sn1 = OrderParameters.individual_order_sn1(layer_lip, lipid, n_chain1)
-                angles_sn1 = angles_sn1.T
+                angles.append(angles_sn1.T)
             if n_chain2 !=0:
                 angles_sn2 = OrderParameters.individual_order_sn2(layer_lip, lipid, n_chain2)
-                angles_sn2 = angles_sn2.T
-            angles = np.concatenate([angles_sn1, angles_sn2], axis=1)
+                angles.append(angles_sn2.T)
+            angles = np.concatenate(angles, axis=1)
+
             layer_ids = layer_lip.residues.resids
 
 
@@ -697,6 +698,7 @@ class Voronoi2D(MembProp):
     def voronoi_all_lip_order(self,
                      lipid_list,
                      layer,
+                     chain = "both",
                      start = None,
                      final = None,
                      step = None,
@@ -704,8 +706,18 @@ class Voronoi2D(MembProp):
                      edges = None,
                      ):
         order_matrices = []
+
+
         for lipid in lipid_list:
-            order, edges = self.voronoi_order(lipid, layer=layer,n_chain=self.chain_info[lipid], start = start, final=final, step=step,
+
+            n_chain = self.chain_info[lipid].copy()
+
+            if chain == "sn1":
+                n_chain[0] = 0
+            elif chain == "sn2":
+                n_chain[1] = 0
+
+            order, edges = self.voronoi_order(lipid, layer=layer,n_chain=n_chain, start = start, final=final, step=step,
                                               nbins=nbins,
                                               edges=edges)
             order_matrices.append(order)
