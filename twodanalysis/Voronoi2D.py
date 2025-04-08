@@ -246,8 +246,16 @@ class Voronoi2D(MembProp):
         nbins = self.nbins if nbins is None else nbins
         xmin, xmax, ymin, ymax = edges
 
-        xcoords = np.linspace(xmin, xmax, nbins)
-        ycoords = np.linspace(ymin, ymax, nbins)
+        if isinstance(nbins, list):
+            nbins1  = nbins[0]
+            nbins2 =  nbins[1]
+
+        elif isinstance(nbins, int):
+            nbins1  = nbins
+            nbins2 =  nbins
+        xcoords = np.linspace(xmin, xmax, nbins1)
+        ycoords = np.linspace(ymin, ymax, nbins2)
+
 
         xx, yy = np.meshgrid(xcoords, ycoords)
         grid_points = np.vstack([xx.ravel(), yy.ravel()]).T
@@ -262,10 +270,10 @@ class Voronoi2D(MembProp):
 
         voronoi_property = np.atleast_2d(voronoi_property)
         if voronoi_property.shape[0] == 1:
-            voronoi_property.T
-            grid = voronoi_property[closest_seed_indices, :].reshape(nbins, nbins)
+            voronoi_property = voronoi_property.T
+            grid = voronoi_property[closest_seed_indices, :].reshape(nbins1, nbins2)
         else:
-            grid = voronoi_property[closest_seed_indices, :].reshape(nbins, nbins,voronoi_property.shape[1])
+            grid = voronoi_property[closest_seed_indices, :].reshape(nbins1, nbins2,voronoi_property.shape[1])
 
         return grid, edges
 
@@ -540,6 +548,7 @@ class Voronoi2D(MembProp):
         final = self.final if final is None else final
         step = self.step if step is None else step
         nbins = self.nbins if nbins is None else nbins
+        edges = self.edges if edges is None else edges
 
 
         no_present = [lipid for lipid in list(self.lipid_list) if lipid not in lipid_list]
