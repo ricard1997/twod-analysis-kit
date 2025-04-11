@@ -127,3 +127,8 @@ twodanalysis/testing.py
 *.vmd
 *.gif
 =======
+
+
+# But track this one:
+!docs/source/polarity.png
+!docs/source/connection.png
