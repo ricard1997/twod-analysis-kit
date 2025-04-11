@@ -15,6 +15,29 @@ The third class :code:`PackingDefects` identifies regions where the hydrophobic 
 
 Below are concise explanations and examples of the Cumulative2D, Voronoi2D, and PackingDefects workflows. For a detailed tutorial notebook visit https://github.com/pyF4all/2DanalysisTutorials/tree/main
 
+
+Download test files
+^^^^^^^^^^^^^^^^^^^^
+
+To run this quick-guide you can download the files as shown below or alternatively use your own .gro/.tpr and .xtc files.
+Files from this section are stored an available on zenodo and can be retrieved with the library wget (Can be installed by running :code:`pip install wget`).
+Alternatively, you can download the files manually and locate then in the same directory your python file runs.
+
+Using wget, you can download the files as follows:
+
+.. code:: python
+
+    import wget
+    url_memb_tpr = https://zenodo.org/records/14834046/files/md_membrane_nowater.tpr
+    url_memb_xtc = https://zenodo.org/records/14834046/files/md_membrane_nowater.xtc
+
+    membrane_tpr = wget(url_memb_tpr)
+    membrane_xtc = wget(url_memb_xtc)
+
+This code will download the files needed to run this quick guide in the current directory with the names md_membrane_nowater.tpr and
+md_membrane_nowater.xtc.
+
+
 Cumulative2D
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -41,8 +64,8 @@ To use the class, call it using :code:`mda.AtomGroup` or a :code:`mda.Universe` 
 
 .. code-block:: python
 
-    tpr = "membrane.tpr" # Replace with your tpr or gro file
-    xtc = "membrane.xtc" # Replace with your xtc file
+    tpr = "md_membrane_nowater.tpr" # Replace with your tpr or gro file
+    xtc = "md_membrane_nowater.xtc" # Replace with your xtc file
 
     universe = mda.Universe(tpr,xtc) # Define a universe
 
@@ -136,6 +159,7 @@ To plot the results:
     cax2 = divider2.append_axes("right", size="5%", pad=0.05)
     cbar = fig.colorbar(second, cax = cax2)
     cbar.set_label('|SCD| $\AA$')
+    plt.show()
 
  .. image:: scd.png
 
@@ -174,6 +198,7 @@ The splay angle between lipid tails can also be projected to a 2D grid using :co
     plt.title("Splay angle")
     cbar = plt.colorbar()
     cbar.set_label('Angle $[\AA^2]$')
+    plt.show()
 
 .. image:: splay_cumu.png
 
@@ -206,8 +231,8 @@ Call the class using an :code:`mda.AtomGroup` or :code:`mda.Universe` as follows
 
 .. code-block:: python
 
-    tpr = "membrane.tpr" # Replace with you own tpr or gro file
-    xtc = "membrane.xtc" # Replace with you xtc file
+    tpr = "md_membrane_nowater.tpr" # Replace with your tpr or gro file
+    xtc = "md_membrane_nowater.xtc" # Replace with your xtc file
 
     universe = mda.Universe(tpr,xtc) # Define a universe with the trajectories
 
@@ -293,6 +318,7 @@ To render the plot use:
     plt.title("Area per lipid")
     cbar = plt.colorbar()
     cbar.set_label('Area per lipid $[\AA^2]$')
+    plt.show()
 
 .. image:: multiple_apl.png
 
@@ -321,6 +347,7 @@ Splay Angle
     plt.title("Splay angle")
     cbar = plt.colorbar()
     cbar.set_label('Angle $[\AA^2]$')
+    plt.show()
 
 .. image:: splay.png
 
@@ -344,8 +371,8 @@ Call the class using an :code:`mda.AtomGroup` or :code:`mda.Universe` as follows
 
 .. code-block:: python
 
-    tpr = "membrane.tpr" # Replace with you own tpr or gro file
-    xtc = "membrane.xtc" # Replace with you xtc file
+    tpr = "md_membrane_nowater.tpr" # Replace with your tpr or gro file
+    xtc = "md_membrane_nowater.xtc" # Replace with your xtc file
 
     universe = mda.Universe(tpr,xtc) # Define a universe with the trajectories
 
@@ -405,7 +432,7 @@ To run the analysis over n frames type:
 
 
 To plot the distribution of packing defects areas type:
-=======
+========================================================
 
 
 .. code-block:: python
