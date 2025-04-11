@@ -1,6 +1,7 @@
 Membrane Simulations
 --------------------
 
+
 To study biophysical properties of membranes in 2D we developed 3 classes: :code:`Cumulative2D`, :code:`Voronoi2D`, and :code:`PackingDefects`.
 The first two classes project membrane properties and features to the membrane surface plane. Current structural properites the code computes and projects include:
 
@@ -9,6 +10,7 @@ The first two classes project membrane properties and features to the membrane s
  - Area-per-lipid (Only for Voronoi2D)
  - Splay angle
 
+
 The third class :code:`PackingDefects` identifies regions where the hydrophobic membrane core is exposed. The implementation in Python is built and optimized from a method implemented in PackMem.
 
 Below are concise explanations and examples of the Cumulative2D, Voronoi2D, and PackingDefects workflows. For a detailed tutorial notebook visit https://github.com/pyF4all/2DanalysisTutorials/tree/main
@@ -16,7 +18,9 @@ Below are concise explanations and examples of the Cumulative2D, Voronoi2D, and 
 Cumulative2D
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+
 `Cumulative2D` projects membranes properties to the two dimensional plane of the membrane surface, perpendicular to the z axis.
+
 The image below illustrates the protocol this class uses for the projection. The process begins by dividing the space into a :math:`m\times m` grid. The xy positions of lipid phosphorus atoms and the respective analysis are collected over a user-set number of frames. These values are averaged within each grid square and stored in a :math:`m\times m` matrix. Alongside this matrix, the grid edges are recorded in the format :math:`[x_\text{min},x_\text{max},y_\text{min},y_\text{max}]`.
 
 
@@ -178,7 +182,10 @@ The splay angle between lipid tails can also be projected to a 2D grid using :co
 Voronoi2D
 ^^^^^^^^^^
 
+
 :code:`Voronoi2D` also projects properties to a 2D grid, but using a different method.
+
+
 :code:`Voronoi2D` first constructs a Voronoi diagram using the positions of lipid head groups (typically lipid P-atoms), and mapping them into a :math:`m\times m` grid. The mapping step is done on each frame as illustrated in the figure below, and averages computed across n frames. At each step, the value of the computed property is assigned to the grid squares that correspond to the xy position of each lipid.  The output, similar to :code:`Cumulative2D`, is a matrix :math:`m \times m`, along with the edges :math:`[x_{\text{min}}, x_{\text{max}}, y_{\text{min}}, y_{\text{max}}]`.
 
 .. image:: voronoii.png
@@ -396,7 +403,10 @@ To run the analysis over n frames type:
                                                       step=1)
 
 
+
 To plot the distribution of packing defects areas type:
+=======
+
 
 .. code-block:: python
 
