@@ -12,4 +12,5 @@ forcefields with some changes in the code. In the future, we plan to add automat
 
 2Danalysis is a an open-source library with detailed documentation and comprehensive tutorials
 (https://github.com/pyF4all/2DanalysisTutorials). Users may cite and use the code acording to their research needs
+
 and customize anlysis pipelines. You may direct questions or suggestions via email to vmonje@buffalo.edu & hguzman@icmab.es
