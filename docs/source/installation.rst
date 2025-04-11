@@ -7,7 +7,9 @@ Installation
 Currently, the installation is done only using the GitHub repository. Updated instructions will be added once the toolbox is added to MDAKits.
 
 Vitual environment
------------------
+
+------------------
+
 
 
 We strongly recommend the creation of a virtual environment with conda
@@ -26,8 +28,19 @@ We strongly recommend the creation of a virtual environment with conda
 
 
 
-Installation from github
-------------------------
+Installation with pip
+---------------------
+
+We provide an easy way to install our package through pip as follows
+
+.. code-block:: console
+
+    pip install twod-analysis-kit
+
+
+Installation from github (Developer version)
+--------------------------------------------
+
 
 Download the repository and go into the directory twdanalysis:
 

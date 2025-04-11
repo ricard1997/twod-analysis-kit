@@ -12,6 +12,8 @@ Welcome to 2D Analysis's documentation!
 
    getting_started
    quick-guide
+   When_problems_arise
+
    api
 
 
