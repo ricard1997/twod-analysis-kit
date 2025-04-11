@@ -25,8 +25,17 @@ We strongly recommend the creation of a virtual environment with conda
     Whenever you close your terminal, you need to use activate command again to restart environment.
 
 
+Installation with pip
+---------------------
 
-Installation from github
+We provide an easy way to install our package through pip as follows
+
+.. code-block:: console
+
+    pip install twod-analysis-kit
+
+
+Installation from github (Developer version)
 ------------------------
 
 Download the repository and go into the directory twdanalysis:
