@@ -167,7 +167,7 @@ The image shows regions where the order parameters are low (in red) and high (in
 
  .. image:: image1aa.png
 
-path_arr_arr,res=obj.KDEAnalysisSelection(select_res,Nframes=1000,zlim=15,show=False,legend=False)
+
 
 
 
