@@ -11,7 +11,7 @@ Customizing lipid heads
 
 Our code will work perfectly and with zero to none user intervention as long as it is composed by cholesterol,
 DODMA, and phospholipids that contains a P in their headgroup. For others lipids, including customized ones, we provide
-an easy way of using them. At initialize :code:`Voronoi2D`, :code:`Cumulative2D` or :code:`PackingDefects`,
+an easy way to work with them. At initialize :code:`Voronoi2D`, :code:`Cumulative2D` or :code:`PackingDefects`,
 the user should provide the headgroup they want to be taken into account for each lipid by passing :code:`working_lip`.
 For example, for a membrane composed by "DSPC", "DODMA", "CHL1", and "POPE", we should provide
 
@@ -36,8 +36,9 @@ For example, for a membrane composed by "DSPC", "DODMA", "CHL1", and "POPE", we 
 
 
     # Start Cumulative 2D or Voronoi2D
-    tpr = "membrane.tpr"
-    xtc = "membrane.xtc"
+    # The following trajectories should be downloaded from zenodo (Only for test purposes)
+    tpr = "md_membrane_nowater.tpr" # Replace with your tpr or gro file
+    xtc = "md_membrane_nowater.xtc" # Replace with your xtc file
     univ = mda.Universe(tpr, xtc)
     membrane = Cumulative2D(univ, working_lip = working_lip)
 
@@ -47,25 +48,26 @@ For example, for a membrane composed by "DSPC", "DODMA", "CHL1", and "POPE", we 
 
 
 .. note::
-    This method can be used to include lipids that give errors, user defined lipids, and Coarse grain lipids. Furthermore,
-    The user can define any atom here, which allows us to use any atom from the lipids and for the corresponding 2D projections.
-    Lately, the user can also define multiple atoms. In such case, the algorithm take the center of mass of all the atoms as the head
-    (This is an experimental feature which could not work in all analysis).
+    This method supports the inclusion of lipids that might otherwise produce errors, as well as user-defined and coarse-grained lipids. 
+    Additionally, users can specify any atom as the lipid headgroup, allowing for flexible selection—such as choosing a random atom from 
+    each lipid—for 2D projections with 2Danalysis. Users may also define multiple atoms as the headgroup; in this case, the algorithm 
+    calculates the center of mass of the selected atoms to represent the head. (This last feature is experimental and may not be compatible 
+    with all analyses.)
 
 
 Customizing lipid tails
 #######################
 
 In cases such as splay angle, order parameters and packing defects, in addition to head information we need information of the tail.
-Our code is able to guess this information for most standard lipids. However, there may be some cases where our code does not work properly.
-For instance, when dealing with sterols, lipids, with one tail or three tails. In such case, the user should provide the bond that connects
-the tail with the head. Follows an image rendered with VMD showing the bonds for CHL1, DODMA, and DSPC.
+Our code can automatically infer tail information for most standard lipids. However, there are exceptions—such as sterols, lipids with 
+a single tail, or those with more than two tails—where the automatic detection may not work as expected. In such cases, the user should 
+manually specify the bonds that connect the head to the tail. Below is an image rendered with VMD illustrating these bonds for CHL1, DODMA, and DSPC.
 
  .. image:: connection.png
 
-The image above shows the names for the atoms that belong to the bond that connects the lipid tails with the headgroup for different lipids.
-These bonds (atoms names) should be provided to the :code:`connection_chain` attribute so 2Danalysis process them correctly. Follows an example
-for the mentioned lipids.
+The image above shows the atom names involved in the bonds that connect the lipid tails to the headgroup for various lipid types. These atom 
+pairs should be provided via the connection_chain attribute to ensure proper processing by 2Danalysis. Below is an example illustrating how 
+to define this attribute for the lipids shown (CHL1, DODMA, and DSPC).
 
 
 .. code-block:: python
@@ -84,8 +86,9 @@ for the mentioned lipids.
         }
 
     # Start Cumulative 2D or Voronoi2D
-    tpr = "membrane.tpr"
-    xtc = "membrane.xtc"
+    # The following trajectories should be downloaded from zenodo (Only for test purposes)
+    tpr = "md_membrane_nowater.tpr" # Replace with your tpr or gro file
+    xtc = "md_membrane_nowater.xtc" # Replace with your xtc file
     univ = mda.Universe(tpr, xtc)
     membrane = Cumulative2D(univ, connection_chains = connection_chains)
 
@@ -95,9 +98,10 @@ for the mentioned lipids.
 
 
 .. note::
-    This method can be used to include any lipid and we recommend to add the lipid chains in the order sn1, sn2 for those with two tails. This method
-    works for lipids with any number of lipid tails, in case of three lipid tails one should provide a list with 3 bonds. Using this method,
-    potentially any lipid can be added to the 2Danalysis framework, including customized lipids and MARTINI lids.
+    This method allows the inclusion of any lipid type into the 2Danalysis framework. For lipids with two tails, 
+    we recommend specifying the chains in the order sn1, sn2. The method also supports lipids with any number 
+    of tails—for example, a lipid with three tails should be defined using a list of three bonds. Using this 
+    approach, virtually any lipid can be incorporated, including custom-defined lipids and MARTINI coarse-grained lipids.
 
 We also offer a nice way to check if the lipids tails are being assigned correctly by plotting them with :code:`visualize_polarity()` which would
 output an image as follows:
@@ -114,9 +118,9 @@ Periodicity
 +++++++++++++++++++
 
 
-All our code include periodicity handling by replicating a percentage of the data, by default 10% in each border. Sometimes,
-specially for Voronoi2D, the default percentage of data replication sould not be enough and APL would show big values or look weird. In
-such case, the user should increase the periodicity value as follows.
+All components of our code handle periodic boundary conditions by replicating a portion of the data—by default, 10% along each edge. 
+However, in certain cases, especially when using Voronoi2D, this default replication may be insufficient, leading to unusually large 
+or visually distorted APL (Area Per Lipid) values. In such situations, users should increase the periodicity replication percentage as shown below.
 
 .. code-block:: python
 
@@ -125,9 +129,9 @@ such case, the user should increase the periodicity value as follows.
     from twodanalysis import Voronoi2D
     from twodanalysis import PackingDefects
 
-
-    tpr = "membrane.tpr"
-    xtc = "membrane.xtc"
+    # The following trajectories should be downloaded from zenodo (Only for test purposes)
+    tpr = "md_membrane_nowater.tpr" # Replace with your tpr or gro file
+    xtc = "md_membrane_nowater.xtc" # Replace with your xtc file
     univ = mda.Universe(tpr, xtc)
 
 
@@ -144,5 +148,5 @@ such case, the user should increase the periodicity value as follows.
     membrane.periodicity = 0.5 # Increase replication of data to 50%
 
 .. note::
-    This is not needed unless your images are showing errors. This is definitely not needed if your edges are significantly
-    smaller than the periodic box size.
+    Adjusting the periodicity replication is not necessary unless your visualizations are showing artifacts or errors. In most 
+    cases, especially when the edges of your system are much smaller than the size of the periodic box, the default setting is sufficient.
