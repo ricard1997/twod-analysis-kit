@@ -31,8 +31,8 @@ Using wget, you can download the files as follows:
     url_memb_tpr = "https://zenodo.org/records/14834046/files/md_membrane_nowater.tpr"
     url_memb_xtc = "https://zenodo.org/records/14834046/files/md_membrane_nowater.xtc"
 
-    membrane_tpr = wget(url_memb_tpr)
-    membrane_xtc = wget(url_memb_xtc)
+    membrane_tpr = wget.download(url_memb_tpr,out='md_membrane_nowater.tpr')
+    membrane_xtc = wget.download(url_memb_xtc,out='md_membrane_nowater.xtc')
 
 This code will download the files needed to run this quick guide in the current directory with the names md_membrane_nowater.tpr and
 md_membrane_nowater.xtc.
