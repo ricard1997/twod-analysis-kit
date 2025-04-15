@@ -6,7 +6,7 @@ To study biophysical properties of membranes in 2D we developed 3 classes: :code
 The first two classes project membrane properties and features to the membrane surface plane. Current structural properites the code computes and projects include:
 
  - Membrane thickness
- - Deuterium order parameters (Only for Cumulative2D)
+ - Deuterium order parameters
  - Area-per-lipid (Only for Voronoi2D)
  - Splay angle
 
