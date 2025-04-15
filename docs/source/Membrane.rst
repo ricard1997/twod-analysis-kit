@@ -420,6 +420,7 @@ Multiple Frames
 For statistical analysis of packing deffects across several frames, :code:`PackingDefects` returns a pandas dataframe and an array with the size of individual packing defects along the trajectory.
 
 To run the analysis over n frames type:
+
 .. code-block:: python
 
     data_df, numpy_sizes = membrane.packing_defects_stats(nbins = 400,
