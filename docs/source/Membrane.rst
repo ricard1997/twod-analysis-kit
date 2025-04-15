@@ -356,7 +356,7 @@ Splay Angle
 PackingDefects
 ^^^^^^^^^^^^^^^
 
-The membrane surface topology is highly dynamic, different lipid species and interactions with other biomolecules result in local changes that can be identified using :code:`2Danalysis` methods. Lipid packing defects analysis is used to quantify the exposure of the hydrophobic membrane core. :code:`PackingDefects`code allows efficient and robust statistical analysis of lipid packing deffects on the membrane surface. The analysis can be done for a single frame as well as for the full trajectory.
+The membrane surface topology is highly dynamic, different lipid species and interactions with other biomolecules result in local changes that can be identified using :code:`2Danalysis` methods. Lipid packing defects analysis is used to quantify the exposure of the hydrophobic membrane core. :code:`PackingDefects` code allows efficient and robust statistical analysis of lipid packing deffects on the membrane surface. The analysis can be done for a single frame as well as for the full trajectory.
 
 Import this class as follows:
 
