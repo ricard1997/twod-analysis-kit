@@ -150,3 +150,11 @@ or visually distorted APL (Area Per Lipid) values. In such situations, users sho
 .. note::
     Adjusting the periodicity replication is not necessary unless your visualizations are showing artifacts or errors. In most 
     cases, especially when the edges of your system are much smaller than the size of the periodic box, the default setting is sufficient.
+
+
+
+Other problems?
++++++++++++++++++++
+
+If you encounter any other issues while using our code, feel free to open an issue on GitHub or contact the developers directly at 
+ricardox@buffalo.edu or vmonje@buffalo.edu. Please use the subject line "2Danalysis issue" when reaching out via email.
