@@ -28,8 +28,8 @@ Using wget, you can download the files as follows:
 .. code:: python
 
     import wget
-    url_memb_tpr = https://zenodo.org/records/14834046/files/md_membrane_nowater.tpr
-    url_memb_xtc = https://zenodo.org/records/14834046/files/md_membrane_nowater.xtc
+    url_memb_tpr = "https://zenodo.org/records/14834046/files/md_membrane_nowater.tpr"
+    url_memb_xtc = "https://zenodo.org/records/14834046/files/md_membrane_nowater.xtc"
 
     membrane_tpr = wget(url_memb_tpr)
     membrane_xtc = wget(url_memb_xtc)
