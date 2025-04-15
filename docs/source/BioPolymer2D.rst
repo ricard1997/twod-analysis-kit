@@ -153,8 +153,8 @@ Titles and further figure customization can be added to the plot using standard 
 
     With the ``inplace=False`` it will not overwrite the ``pos`` attribute of the object, but only return it.
     
-Kernel Density Estimation (KDE) contours
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2D position density contours
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In general, we would like to have a reference of the position of the whole biopolymer to have insight ont the flexible regions. Therefore, 
 we first compute the KDE of whole molecule, and then compute the KDE of selected residues:
