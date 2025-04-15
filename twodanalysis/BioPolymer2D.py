@@ -425,7 +425,9 @@ class BioPolymer2D:
             return pos_masked
 
 
-    def PolarAnalysis(self,select_res,Nframes, zlim=14,max_hist=None,sort=None,ax=None,plot=False,control_plots=False,Nbins=1000,resolution=5):
+    def PolarAnalysis(self,select_res,Nframes, zlim=14,max_hist=None,sort=None,ax=None,plot=False,
+                    colors=['C%s'%(c) for c in range(10)],
+                    control_plots=False,Nbins=1000,resolution=5):
         """Makes a Polar Histogram of the positions of the center of mass of ``select_res`` residues considering ``Nframes`` closest to the surface within the < zlim threshold. 
         ``self.pos`` attribute is used to compute the center of mass of the AtomGroup, which will be the referential center of the histograms.
         The colors of the histogram are ordered according to sort parameter.
@@ -447,6 +449,8 @@ class BioPolymer2D:
             Set plot on a predefined Axis. If None, function defines if own axis internally. By default None
         plot : bool, optional
             Show the polar plot (True) or only return the data (False), by default False
+        colors : list, optional
+            List of colors to use in the polar plot. If None, default matplotlib colors are used. By default ['C%s'%(c) for c in range(10)]
         control_plots : bool, optional
             Show control plots of the different steps of the polar analysis calculation., by default False
         Nbins : int, optional
@@ -583,11 +587,12 @@ class BioPolymer2D:
             if ax is None:
                 ax = plt.subplot(111, polar=True)  # Create a new figure and axes if not provided
             for i in range(ordered_selected_pos.shape[1]):
-                fig_label='%i-%s'%(prot.residues.resids[sort_i[i]],prot.residues.resnames[sort_i[i]])
+                # fig_label='%i-%s'%(prot.residues.resids[sort_i[i]],prot.residues.resnames[sort_i[i]])
+                fig_label=f'{prot.residues.resnames[sort_i[i]]} {prot.residues.resids[sort_i[i]]}'
 
                 bars = ax.bar(hist_arr[sort_i[i],0], hist_arr[sort_i[i],1]*max_height*norm_max_hist,
                         width=width,label='%s'%fig_label,
-                        bottom=bottom,#color=colors[i],
+                        bottom=bottom,color=colors[i],
                         alpha=0.8
                         )
             ax.set_yticklabels([])
@@ -931,7 +936,7 @@ class BioPolymer2D:
             return Areas
         
         
-    def KDEAnalysisSelection(self,select_res,Nframes,zlim=15,ax=None,show=False,legend=False,plot_COM=True,getNframes=False):
+    def KDEAnalysisSelection(self,select_res,Nframes,zlim=15,ax=None,show=False,legend=False,plot_COM=True,getNframes=False,def_colors=["C%i"%(i) for i in range(10)]):
         r"""KDE Contours for a set of selected residues. This computes the paths of all the contour levels of each residue.
 
         Parameters
@@ -953,6 +958,8 @@ class BioPolymer2D:
             since this will be the center of the polar histograms if ``select_res`` are the same in both analysis. By default True
         getNframes : bool, optional
             If True, returns the number of frames selected, by default False
+        def_colors : list, optional
+            List of colors to use for each residue. By default ["C%i"%(i) for i in range(10)], which are the default colors of Matplotlib.
 
         Returns
         -------
@@ -960,7 +967,7 @@ class BioPolymer2D:
             Returns a list with the contour levels paths of each selected residue, and selected AtomGroup. The list of contour levels paths and the reisudes in the AtomGroup are ordered consistently.
         """
 
-        def_colors=["C%i"%(i) for i in range(10)]
+
 
         COM=self.atom_group.center_of_mass()
 
@@ -984,7 +991,7 @@ class BioPolymer2D:
         # print(all_pos_selected_reshaped.shape)
         Nres=len(all_pos_selected[0])
         if plot_COM:
-            plt.plot(COM[0],COM[1],c='k',marker='o')
+            plt.plot(COM[0],COM[1],c='k',marker='x')
         resnames=[]
         handles=[]
         paths_arr_arr=[]
@@ -998,7 +1005,8 @@ class BioPolymer2D:
             kde_plot=sns.kdeplot(df0, x='x',y='y', fill=True,cmap=cmap_color,ax=ax)
             # Create a legend handle manually
             handles.append(Line2D([0], [0], color=def_colors[ires], lw=4))
-            resnames.append(f"{res.residues[ires].resid}-{res.residues[ires].resname}")
+            resnames.append(f"{res.residues[ires].resname} {res.residues[ires].resid}")
+            # resnames.append(f"{res.residues[ires].resid}-{res.residues[ires].resname}")
             paths_arr=[]
             Nlvls=len(kde_plot.collections[-1].get_paths())
             # print(f"There are {Nlvls} levels in the KDE.")
@@ -1137,9 +1145,11 @@ class BioPolymer2D:
     def plotHbondsPerResidues(self,
                             paths_for_contour,
                             max_circle_size=160,
+                            colors = ['C%s' % i for i in range(10)],
                             top=-1,contour_lvls_to_plot=None,
                             contour_colors=None,
                             contour_ls=None,
+                            contour_lw=None,
                             contour_alphas=None,
                             filter=None,
                             print_table=True,
@@ -1153,6 +1163,9 @@ class BioPolymer2D:
             List of paths of all the contour levels.
         max_circle_size : int, optional
             Maximum size of the circle representing the residue with most H-bonds. By default 160
+        colors : list, optional
+            List of colors to use for each residue. By default ['C%s' % i for i in range(10)], which are the default colors of Matplotlib.
+            If the number of residues is greater than 10, the colors are cycled.
         top : int, optional
             Residues are plotted ranked by residues with most contact to least. This parameters indicates how many residues to plot of these ranked residues, e.g. top=5 wil plot the 5 residues with most Hbonds during the simulations. By default -1, plots all the residues with H-bonds.
         contour_lvls_to_plot : list, optional
@@ -1161,6 +1174,8 @@ class BioPolymer2D:
             Colors to use to show the reference contour levels.This list must be the same size than `contour_lvls_to_plot` parameter. Default None, which all reference contour plots are shown in black.
         contour_ls : list, optional
             Line style of the contour levels. Default is a solid line.
+        contour_lw : list, optional
+            Line width of the contour levels. Default is None.
         contour_alphas : list, optional
             Transparency of the contour levels. Default is 0.3.
         filter : str, optional
@@ -1203,14 +1218,16 @@ class BioPolymer2D:
             contour_ls=['-' for _ in  paths_for_contour]
         if not contour_alphas:
             contour_alphas=[0.3 for _ in  paths_for_contour]
+        if not contour_lw:
+            contour_lw=[None for _ in  paths_for_contour]
         if ax is None:
             fig,ax = plt.subplots()  # Create a new figure and axes if not provided
 
         for lvl,c,i in zip(contour_lvls_to_plot,contour_colors, range(len(contour_lvls_to_plot))):
             # self.plotPathsInLevel(paths_for_contour,lvl,color=c,ax=ax)
-            self.plotPathsInLevel(paths_for_contour,lvl,ax=ax,ls=contour_ls[i],alpha=contour_alphas[i])
+            self.plotPathsInLevel(paths_for_contour,lvl,ax=ax,ls=contour_ls[i],alpha=contour_alphas[i],color=c,lw=contour_lw[i])
 
-        colors = ['C%s' % i for i in range(10)]  # Define color palette
+          # Define color palette
         num_colors = len(colors)
         for i in range(pos[:,:top].shape[1]):
             # Use modular indexing to cycle through colors
@@ -1219,17 +1236,17 @@ class BioPolymer2D:
             # norm_val_plot=sorted_df['Count'].iloc[i]/max_val
             pos=sorted_df[['X','Y','Z']].iloc[i]
             ax.plot(pos['X'],pos['Y'], 'o',color=color,
-                    label='%s-%s (%.2f)'%(sorted_df['ResIDs'].iloc[i],
-                                        sorted_df['ResNames'].iloc[i],
-                                        norm_val*100),)
+                    label=f'{sorted_df['ResNames'].iloc[i]} {sorted_df['ResIDs'].iloc[i]} ({norm_val*100:.2f})')
             ax.scatter(pos['X'],pos['Y'], s=(max_circle_size*norm_val)**2, alpha=.5, color=color)
             # ax.scatter(pos['X'],pos['Y'], s=(max_circle_size*norm_val_plot)**2, alpha=.5, color=color)
         ax.set_xlabel(r'X-axis($\AA$)',)#fontsize=20)
         ax.set_ylabel(r'Y-axis($\AA$)',)#fontsize=20)
         plt.gca().set_aspect('equal')
         plt.tight_layout()
+        # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),#prop={'size':22},
+        #             title="ResID-ResName(Hbond %)",)#title_fontsize=20)
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),#prop={'size':22},
-                    title="ResID-ResName(Hbond %)",)#title_fontsize=20)
+            title="ResName ResIDs (Hbond %)",)#title_fontsize=20)
         if show:
             plt.show()
         return sorted_df
