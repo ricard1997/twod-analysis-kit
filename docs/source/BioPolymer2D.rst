@@ -1,15 +1,36 @@
 BioPolymer2D
-----------------------------------------
+-------------
 
 
 This quick user guide includes instructions on how compute the following analysis:
 
  - Polar histogram analysis
- - Kernel Density Estimation contours
+ - 2D position density contours
  - Parallel and perpendicular radii of gyrations
  - Hydrogen bonds per residues
 
-Before any analysis, we must import ``MDAnalysis`` (since our class is initialized with a 
+Download trajectory files
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Although this quick guide is designed to be adapted to work with any trajectory, it is **strongly recommended** to first
+follow it using *our* trajectories to gain an initial approach to the parameters you need to adjust and how to modify
+them for your own system.
+
+To proceed, download our trajectories from Zenodo using the ``wget`` command (if needed, install
+it with ``pip install wget`` in the command line). The download may take a few minutes. A directory 
+named ``data`` will be created containing the downloaded trajectories.
+
+.. code-block:: python
+    
+    import wget
+    import os
+    url_tpr = 'https://zenodo.org/records/14834110/files/md_biopolymer_nowater.tpr'
+    url_xtc = 'https://zenodo.org/records/14834110/files/md_biopolymer_nowater.xtc'
+    os.makedirs('data', exist_ok=True)
+    load_MD_NOWATER_TPR = wget.download(url_tpr,out='data/md_biopolymer_nowater.tpr')
+    load_MD_TRAJ = wget.download(url_xtc,out='data/md_biopolymer_nowater.xtc')
+
+Before we start the analysis, we need to import ``MDAnalysis`` (since our class is initialized with a 
 MDAnalysis AtomGroup or Universe), and our class.
 
 .. code-block:: python
@@ -18,23 +39,23 @@ MDAnalysis AtomGroup or Universe), and our class.
     import matplotlib.pyplot as plt
     from twodanalysis import BioPolymer2D
 
-
-
 We initialize our object using a MDAnalysis Universe, or a AtomGroup, and the selection of the surface inteface. Although, selecting the surface interface is not
-mandatory it is highly recomended. In particular, if you expect to use polar histograms or any of the 2D density contour plot.
+mandatory it is **highly recomended**. In particular, if you expect to make polar histograms or any of the 2D density contour plot.
 
 .. code-block:: python
 
-    tpr = "md.tpr" # Replace this with you own topology file
-    xtc = "md.xtc" # Replace this with your trajectory file
+    MD_NOWATER_TPR='data/md_biopolymer_nowater.tpr' # Replace this with you own topology file
+    MD_TRAJ='data/md_biopolymer_nowater.xtc' # Replace this with your trajectory file
 
-    universe = mda.Universe(tpr,xtc) # Define a universe with the trajectories
+    universe = mda.Universe(MD_NOWATER_TPR,MD_TRAJ) # Define a universe with the trajectories
     sel=universe.select_atoms("protein") # Use any convinient selection.
 
     biopol = BioPolymer2D(sel, surf_selection='resname DOL and name O1 and prop z > 16')   # Initialize object by loading selection.
 
-If `BioPolymer2D` is initialized with a Universe, the whole universe is considered to be the selection. We can also set our our biopolymer to be subset of ``universe`` or 
-``sel`` by adding the input parameter ``biopol_selection`` with a subset selection. Notethat the biopolymer is not necesarilly a protein but can also be a nucleic acid. 
+If `BioPolymer2D` is initialized with a Universe, the whole universe is considered to be the selection. 
+We can also set our biopolymer to be subset of the ``mda.Universe`` or ``mda.AtomGroup`` by adding the input parameter 
+``biopol_selection`` with a subset selection. *Note that the biopolymer is not necesarilly a protein but 
+can also be a nucleic acid.*
 
 .. note::
 
