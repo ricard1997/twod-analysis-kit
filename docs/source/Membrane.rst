@@ -28,11 +28,21 @@ Using wget, you can download the files as follows:
 .. code:: python
 
     import wget
+
+    # RNA-membrane files (Membrane is composed by a mixture of DSPC:DODMA:CHL1:POPE)
     url_memb_tpr = "https://zenodo.org/records/14834046/files/md_membrane_nowater.tpr"
     url_memb_xtc = "https://zenodo.org/records/14834046/files/md_membrane_nowater.xtc"
 
     membrane_tpr = wget.download(url_memb_tpr,out='md_membrane_nowater.tpr')
     membrane_xtc = wget.download(url_memb_xtc,out='md_membrane_nowater.xtc')
+
+    # MLKL-membrane files (Membrane is composed by a mixture of DOPC:DOPE:POPI1:POPI2:CHL1)
+    url_memb_tpr = "https://zenodo.org/records/14834046/files/mlkl_membrane.tpr"
+    url_memb_xtc = "https://zenodo.org/records/14834046/files/mlkl_membrane.xtc"
+
+    mlkl_membrane_tpr = wget.download(url_memb_tpr,out='mlkl_membrane.tpr')
+    mlkl_membrane_xtc = wget.download(url_memb_xtc,out='mlkl_membrane.xtc')
+    
 
 This code will download the files needed to run this quick guide in the current directory with the names md_membrane_nowater.tpr and
 md_membrane_nowater.xtc.
@@ -231,8 +241,8 @@ Call the class using an :code:`mda.AtomGroup` or :code:`mda.Universe` as follows
 
 .. code-block:: python
 
-    tpr = "md_membrane_nowater.tpr" # Replace with your tpr or gro file
-    xtc = "md_membrane_nowater.xtc" # Replace with your xtc file
+    tpr = "mlkl_membrane.gro" # Replace with your tpr or gro file
+    xtc = "mlkl_membrane.xtc" # Replace with your xtc file
 
     universe = mda.Universe(tpr,xtc) # Define a universe with the trajectories
 
