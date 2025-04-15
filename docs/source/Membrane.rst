@@ -432,7 +432,7 @@ To run the analysis over n frames type:
 
 
 To plot the distribution of packing defects areas type:
-========================================================
+
 
 
 .. code-block:: python
