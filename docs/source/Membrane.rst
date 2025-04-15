@@ -45,7 +45,7 @@ Using wget, you can download the files as follows:
     
 
 This code will download the files needed to run this quick guide in the current directory with the names md_membrane_nowater.tpr and
-md_membrane_nowater.xtc.
+md_membrane_nowater.xtc for the RNA-membrane and with the names mlkl_membrane.tpr and mlkl_membrane.xtc for the MLKL-membrane system.
 
 
 Cumulative2D
