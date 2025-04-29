@@ -116,8 +116,10 @@ class Cumulative2D(MembProp):
             Lipid to compute SCD, by default "DOPC"
         layer : str, optional
             Layer to project in the 2D plane, by default "top"
-        nbins : int, optional
-            Number of bins, by default None
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
         n_chain : list(int), optional
             list with the number of carbons in each chain i.e., [16,18], by default None
         edges : list(int), optional
@@ -415,8 +417,10 @@ class Cumulative2D(MembProp):
         ----------
         layer : (str)
             Layer, can be top, bot, both
-        nbins : (int)
-            number of bins
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
         edges : list(float)
             Edges for the grid in the shape [xmin,xmax,ymin,ymax]
         start : (int, optional), optional
@@ -692,8 +696,10 @@ class Cumulative2D(MembProp):
             Final frame for the analysis, by default None
         step : int, optional
             Steps to skip, by default None
-        nbins : int, optional
-            Number of bins to divide the grid space, by default 50
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
 
 
         Returns
@@ -772,8 +778,10 @@ class Cumulative2D(MembProp):
             Final frame for the analysis, by default None
         step : int, optional
             Steps to skip, by default None
-        nbins : int, optional
-            Number of bins to divide the grid space, by default None
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
 
 
         Returns
@@ -830,8 +838,10 @@ class Cumulative2D(MembProp):
 
         Parameters
         ----------
-        nbins : int
-            number of bins for thickness
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
         edges : list
             Edges for the grid in the shape [xmin,xmax,ymin,ymax]
         lipid_list : list(str)
@@ -906,8 +916,10 @@ class Cumulative2D(MembProp):
             Final frame for the analysis, by default None
         step : int, optional
             Steps to skip, by default None
-        nbins : int, optional
-            Number of bins to divide the grid space, by default 50
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
 
 
         Returns
