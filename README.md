@@ -35,6 +35,14 @@ Below we provide instructions both for `conda` and `pip`.
 
 #### With pip
 
+First, create a virtual environment and activate it. You can do it with conda as follows:
+
+
+```
+conda create --name twod
+conda activate twod
+```
+
 For easy installation, run:
 
 ```
