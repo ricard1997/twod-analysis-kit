@@ -42,7 +42,7 @@ Using wget, you can download the files as follows:
 
     mlkl_membrane_tpr = wget.download(url_memb_tpr,out='mlkl_membrane.tpr')
     mlkl_membrane_xtc = wget.download(url_memb_xtc,out='mlkl_membrane.xtc')
-    
+
 
 This code will download the files needed to run this quick guide in the current directory with the names md_membrane_nowater.tpr and
 md_membrane_nowater.xtc for the RNA-membrane and with the names mlkl_membrane.tpr and mlkl_membrane.xtc for the MLKL-membrane system.
@@ -54,8 +54,15 @@ Cumulative2D
 
 `Cumulative2D` projects membranes properties to the two dimensional plane of the membrane surface, perpendicular to the z axis.
 
-The image below illustrates the protocol this class uses for the projection. The process begins by dividing the space into a :math:`m\times m` grid. The xy positions of lipid phosphorus atoms and the respective analysis are collected over a user-set number of frames. These values are averaged within each grid square and stored in a :math:`m\times m` matrix. Alongside this matrix, the grid edges are recorded in the format :math:`[x_\text{min},x_\text{max},y_\text{min},y_\text{max}]`.
+The image below illustrates the protocol this class uses for the projection. The process begins by dividing the space into a :math:`m\times m` grid.
+The xy positions of lipid phosphorus atoms and the respective analysis are collected over a user-set number of frames.
+These values are averaged within each grid square and stored in a :math:`m\times m` matrix. Alongside this matrix,
+the grid edges are recorded in the format :math:`[x_\text{min},x_\text{max},y_\text{min},y_\text{max}]`.
 
+.. note::
+    The current version allows to select different number of bins for the x and y axis. The default is to use the same number of
+    bins for both axes. You can control this by passing a list of two values to :code:`nbins` parameter. For example, to set
+    50 bins for the x axis and 100 for the y axis, use :code:`nbins = [50, 100]`. If you pass an integer, it will be used for both axes.
 
 .. image:: cumulative.png
 
@@ -221,7 +228,16 @@ Voronoi2D
 :code:`Voronoi2D` also projects properties to a 2D grid, but using a different method.
 
 
-:code:`Voronoi2D` first constructs a Voronoi diagram using the positions of lipid head groups (typically lipid P-atoms), and mapping them into a :math:`m\times m` grid. The mapping step is done on each frame as illustrated in the figure below, and averages computed across n frames. At each step, the value of the computed property is assigned to the grid squares that correspond to the xy position of each lipid.  The output, similar to :code:`Cumulative2D`, is a matrix :math:`m \times m`, along with the edges :math:`[x_{\text{min}}, x_{\text{max}}, y_{\text{min}}, y_{\text{max}}]`.
+:code:`Voronoi2D` first constructs a Voronoi diagram using the positions of lipid head groups (typically lipid P-atoms), and mapping
+them into a :math:`m\times m` grid. The mapping step is done on each frame as illustrated in the figure below, and averages computed
+across n frames. At each step, the value of the computed property is assigned to the grid squares that correspond to the xy position
+of each lipid.  The output, similar to :code:`Cumulative2D`, is a matrix :math:`m \times m`, along with the
+edges :math:`[x_{\text{min}}, x_{\text{max}}, y_{\text{min}}, y_{\text{max}}]`.
+
+.. note::
+    The current version allows to select different number of bins for the x and y axis. The default is to use the same number of
+    bins for both axes. You can control this by passing a list of two values to :code:`nbins` parameter. For example, to set
+    50 bins for the x axis and 100 for the y axis, use :code:`nbins = [50, 100]`. If you pass an integer, it will be used for both axes.
 
 .. image:: voronoii.png
 
@@ -240,12 +256,15 @@ To import :code:`Voronoi2D` type:
 Call the class using an :code:`mda.AtomGroup` or :code:`mda.Universe` as follows:
 
 .. code-block:: python
+    tpr = "md_membrane_nowater.tpr" # Replace with your tpr or gro file
+    xtc = "md_membrane_nowater.xtc" # Replace with your xtc file
 
-    tpr = "mlkl_membrane.gro" # Replace with your tpr or gro file
-    xtc = "mlkl_membrane.xtc" # Replace with your xtc file
 
     universe = mda.Universe(tpr,xtc) # Define a universe with the trajectories
-
+.. note::
+    The current version allows to select different number of bins for the x and y axis. The default is to use the same number of
+    bins for both axes. You can control this by passing a list of two values to :code:`nbins` parameter. For example, to set
+    50 bins for the x axis and 100 for the y axis, use :code:`nbins = [50, 100]`. If you pass an integer, it will be used for both axes.
     membrane = Voronoi2D(universe,   # load the universe
                     verbose = False, # Does not print initial information
                     nbins = 100)
@@ -381,8 +400,8 @@ Call the class using an :code:`mda.AtomGroup` or :code:`mda.Universe` as follows
 
 .. code-block:: python
 
-    tpr = "md_membrane_nowater.tpr" # Replace with your tpr or gro file
-    xtc = "md_membrane_nowater.xtc" # Replace with your xtc file
+    tpr = "mlkl_membrane.gro" # Replace with your tpr or gro file
+    xtc = "mlkl_membrane.xtc" # Replace with your xtc file
 
     universe = mda.Universe(tpr,xtc) # Define a universe with the trajectories
 

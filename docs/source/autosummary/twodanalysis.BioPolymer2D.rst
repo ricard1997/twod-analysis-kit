@@ -20,7 +20,27 @@
       ~BioPolymer2D.ListPathsInLevel
       ~BioPolymer2D.PolarAnalysis
       ~BioPolymer2D.RgPerpvsRgsPar
-      ~BioPolymer2D.__init__
+      ~BioPolymer2D.__delattr__
+      ~BioPolymer2D.__dir__
+      ~BioPolymer2D.__eq__
+      ~BioPolymer2D.__format__
+      ~BioPolymer2D.__ge__
+      ~BioPolymer2D.__getattribute__
+      ~BioPolymer2D.__getstate__
+      ~BioPolymer2D.__gt__
+      ~BioPolymer2D.__hash__
+      ~BioPolymer2D.__init_subclass__
+      ~BioPolymer2D.__le__
+      ~BioPolymer2D.__lt__
+      ~BioPolymer2D.__ne__
+      ~BioPolymer2D.__new__
+      ~BioPolymer2D.__reduce__
+      ~BioPolymer2D.__reduce_ex__
+      ~BioPolymer2D.__setattr__
+      ~BioPolymer2D.__sizeof__
+      ~BioPolymer2D.__str__
+      ~BioPolymer2D.__subclasshook__
+      ~BioPolymer2D._recalculate_frames
       ~BioPolymer2D.computeRG2D
       ~BioPolymer2D.getAreas
       ~BioPolymer2D.getCOMs
@@ -28,7 +48,6 @@
       ~BioPolymer2D.getKDEAnalysis
       ~BioPolymer2D.getPositions
       ~BioPolymer2D.getRgs2D
-      ~BioPolymer2D.makeCmapColor
       ~BioPolymer2D.plotHbondsPerResidues
       ~BioPolymer2D.plotPathsInLevel
    
@@ -40,11 +59,9 @@
 
    .. autosummary::
    
-      ~BioPolymer2D.endF
-      ~BioPolymer2D.endT
-      ~BioPolymer2D.startF
-      ~BioPolymer2D.startT
-      ~BioPolymer2D.stepF
-      ~BioPolymer2D.stepT
+      ~BioPolymer2D.__annotations__
+      ~BioPolymer2D.__doc__
+      ~BioPolymer2D.__module__
+      ~BioPolymer2D.__weakref__
    
    

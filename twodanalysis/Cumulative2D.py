@@ -33,6 +33,42 @@ class Cumulative2D(MembProp):
                 working_lip = None,
                 connection_chains = None
                 ):
+        """ Class to compute the Voronoi tessalation for a given universe. It uses the Voronoi class from scipy.spatial
+
+        Parameters
+        ----------
+        universe : MDAnalysis.core.universe.Universe
+            Universe to be used for the analysis
+        lipid_list : list, optional
+            list of lipids to be considered for Voronoi tesselation, by default None
+        verbose : bool, optional
+            Descriptive tool, by default False
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
+            If None, it uses the default value of 180
+        periodic : bool, optional
+            If True, it uses the periodicity of the system to extend the data, by default False
+        edges : list, optional
+            A list with the limits of the grid [xmin,xmax,ymin,ymax], by default None
+            If None, it uses the min and max values of the atoms in the first frame.
+        connection_chains : dict, optional
+            dictionary with the connection chains for the lipids, by default None
+            It is a dictionary with the lipid name as key and a list of lists/tuples as value. The lists/tuples contains the
+            atoms that connect the headgroup and the lipid tails. For more details refer to When problems arise section.
+        working_lip : dict, optional
+            dictionary with the working lipids, by default None
+            It is a dictionary with the lipid name as key and a dictionary as value. The dictionary contains the atoms that
+            are used as the head reference (Commonly P for phospholipids). The minimum you should pass to this dictionary is the key
+            "head". However, you can also pass other keys such as "last_c" to define the last and first carbon of the tail or charge.
+            For example, for a phospholipid you can pass the following dictionary:
+            working_lip = {"DOPC": {"head": "P",
+                                    "charge": 0,}}
+            The only key needed is "head". Further entries are inferef with MembProp class.
+
+
+        """
 
         super().__init__(universe,
                          lipid_list=lipid_list,
@@ -80,8 +116,10 @@ class Cumulative2D(MembProp):
             Lipid to compute SCD, by default "DOPC"
         layer : str, optional
             Layer to project in the 2D plane, by default "top"
-        nbins : int, optional
-            Number of bins, by default None
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
         n_chain : list(int), optional
             list with the number of carbons in each chain i.e., [16,18], by default None
         edges : list(int), optional
@@ -240,7 +278,7 @@ class Cumulative2D(MembProp):
         sample1 : np.array(n,2)
             2D data information
         weights : np.array(n,m)
-            m values can be attached to the data (usually lenght of the tails)
+            m values can be attached to the data (usually length of the tails)
         n_chain : int or list
             Number of carbons in each chain, e.g, 16 or [16,16] for both chains
         bins : int, optional
@@ -250,7 +288,7 @@ class Cumulative2D(MembProp):
         Returns
         -------
         np.array, np.array
-            matrix containining the averaged 2D histogram, edges corresponding to te matrix
+            matrix containing the averaged 2D histogram, edges corresponding to te matrix
         """
         if edges is None:
             edges = [[self.edges[0], self.edges[1]],
@@ -379,8 +417,10 @@ class Cumulative2D(MembProp):
         ----------
         layer : (str)
             Layer, can be top, bot, both
-        nbins : (int)
-            number of bins
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
         edges : list(float)
             Edges for the grid in the shape [xmin,xmax,ymin,ymax]
         start : (int, optional), optional
@@ -462,12 +502,12 @@ class Cumulative2D(MembProp):
             Final frame, by default None
         step : int, optional
             Frames to skip, by default None
-        lipids : str or list, optional
+        lipid_list : str or list, optional
              Lipid to work, by default "DSPC"
         layer : str, optional
             Layer to work, by default 'top'
         function : function, optional
-            Function that returns two arrays, the first with ids, and the second with any
+            Function that returns two arrays, the first with atomgroup.residues.resids, and the second with any
             property value.
             Defaults to None
         splay : bool, optional
@@ -628,7 +668,7 @@ class Cumulative2D(MembProp):
             string += f" or (resname {resname}  and name {atomsnames[ i + 1]}) "
         string +=  " ) "
         return string
-    #def individual_splay(self, atom_group, lipids):
+
 
 
 
@@ -656,8 +696,10 @@ class Cumulative2D(MembProp):
             Final frame for the analysis, by default None
         step : int, optional
             Steps to skip, by default None
-        nbins : int, optional
-            Number of bins to divide the grid space, by default 50
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
 
 
         Returns
@@ -736,8 +778,10 @@ class Cumulative2D(MembProp):
             Final frame for the analysis, by default None
         step : int, optional
             Steps to skip, by default None
-        nbins : int, optional
-            Number of bins to divide the grid space, by default None
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
 
 
         Returns
@@ -794,11 +838,13 @@ class Cumulative2D(MembProp):
 
         Parameters
         ----------
-        nbins : int
-            number of bins for thickness
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
         edges : list
             Edges for the grid in the shape [xmin,xmax,ymin,ymax]
-        lipids : list(str)
+        lipid_list : list(str)
             Lipids to be considered in the thickness computation
         start : int, optional
             Start frame, by default None
@@ -870,8 +916,10 @@ class Cumulative2D(MembProp):
             Final frame for the analysis, by default None
         step : int, optional
             Steps to skip, by default None
-        nbins : int, optional
-            Number of bins to divide the grid space, by default 50
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
 
 
         Returns
