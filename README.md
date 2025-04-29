@@ -16,7 +16,7 @@
 [badge_release]: https://img.shields.io/github/release-pre/monjegroup/twod-analysis-kit.svg
 [url_actions]: https://github.com/monjegroup/twod-analysis-kit/actions?query=branch%3Amain+workflow%3Agh-ci
 [url_codecov]: https://codecov.io/gh/monjegroup/twod-analysis-kit/branch/main
-[url_docs]: https://twod-analysis-kit.readthedocs.io/en/latest/?badge=latest
+[url_docs]: https://twodanalysis.readthedocs.io/en/latest/
 [url_latest_release]: https://github.com/monjegroup/twod-analysis-kit/releases
 [url_license]: https://www.gnu.org/licenses/gpl-2.0
 [url_mda]: https://www.mdanalysis.org
@@ -31,6 +31,15 @@ To build `twodanalysis` from source,
 We strongly recommend that you use virtual environments and
 [Anaconda](https://docs.conda.io/en/latest/) as your package manager.
 Below we provide instructions both for `conda` and `pip`.
+
+
+#### With pip
+
+For easy installation, run:
+
+```
+pip install twod-analysis-kit
+```
 
 #### With conda
 
@@ -70,20 +79,6 @@ And when you are finished, you can exit the virtual environment with:
 conda deactivate
 ```
 
-#### With pip
-
-To build the package from source, run:
-
-```
-pip install .
-```
-
-If you want to create a development environment, install
-the dependencies required for tests and docs with:
-
-```
-pip install ".[test,doc]"
-```
 
 #### Tutorials!
 
