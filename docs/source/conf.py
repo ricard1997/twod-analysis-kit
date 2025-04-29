@@ -45,6 +45,17 @@ needs_sphinx = "6.2.1"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named "sphinx.ext.*") or your custom
 # ones.
+
+def skip_undocumented(app, what, name, obj, skip, options):
+    if not skip:
+        # Skip if the object has no docstring
+        return not bool(obj.__doc__)
+    return skip
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip_undocumented)
+
+
 extensions = [
     #'sphinx_copybutton',  Copy button causing errors
     "sphinx.ext.autosummary",
