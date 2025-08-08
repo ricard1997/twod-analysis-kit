@@ -28,14 +28,24 @@ Using wget, you can download the files as follows:
 .. code:: python
 
     import wget
-    url_memb_tpr = https://zenodo.org/records/14834046/files/md_membrane_nowater.tpr
-    url_memb_xtc = https://zenodo.org/records/14834046/files/md_membrane_nowater.xtc
 
-    membrane_tpr = wget(url_memb_tpr)
-    membrane_xtc = wget(url_memb_xtc)
+    # RNA-membrane files (Membrane is composed by a mixture of DSPC:DODMA:CHL1:POPE)
+    url_memb_tpr = "https://zenodo.org/records/14834046/files/md_membrane_nowater.tpr"
+    url_memb_xtc = "https://zenodo.org/records/14834046/files/md_membrane_nowater.xtc"
+
+    membrane_tpr = wget.download(url_memb_tpr,out='md_membrane_nowater.tpr')
+    membrane_xtc = wget.download(url_memb_xtc,out='md_membrane_nowater.xtc')
+
+    # MLKL-membrane files (Membrane is composed by a mixture of DOPC:DOPE:POPI1:POPI2:CHL1)
+    url_memb_tpr = "https://zenodo.org/records/14834046/files/mlkl_membrane.tpr"
+    url_memb_xtc = "https://zenodo.org/records/14834046/files/mlkl_membrane.xtc"
+
+    mlkl_membrane_tpr = wget.download(url_memb_tpr,out='mlkl_membrane.tpr')
+    mlkl_membrane_xtc = wget.download(url_memb_xtc,out='mlkl_membrane.xtc')
+
 
 This code will download the files needed to run this quick guide in the current directory with the names md_membrane_nowater.tpr and
-md_membrane_nowater.xtc.
+md_membrane_nowater.xtc for the RNA-membrane and with the names mlkl_membrane.tpr and mlkl_membrane.xtc for the MLKL-membrane system.
 
 
 Cumulative2D
@@ -44,8 +54,15 @@ Cumulative2D
 
 `Cumulative2D` projects membranes properties to the two dimensional plane of the membrane surface, perpendicular to the z axis.
 
-The image below illustrates the protocol this class uses for the projection. The process begins by dividing the space into a :math:`m\times m` grid. The xy positions of lipid phosphorus atoms and the respective analysis are collected over a user-set number of frames. These values are averaged within each grid square and stored in a :math:`m\times m` matrix. Alongside this matrix, the grid edges are recorded in the format :math:`[x_\text{min},x_\text{max},y_\text{min},y_\text{max}]`.
+The image below illustrates the protocol this class uses for the projection. The process begins by dividing the space into a :math:`m\times m` grid.
+The xy positions of lipid phosphorus atoms and the respective analysis are collected over a user-set number of frames.
+These values are averaged within each grid square and stored in a :math:`m\times m` matrix. Alongside this matrix,
+the grid edges are recorded in the format :math:`[x_\text{min},x_\text{max},y_\text{min},y_\text{max}]`.
 
+.. note::
+    The current version allows to select different number of bins for the x and y axis. The default is to use the same number of
+    bins for both axes. You can control this by passing a list of two values to :code:`nbins` parameter. For example, to set
+    50 bins for the x axis and 100 for the y axis, use :code:`nbins = [50, 100]`. If you pass an integer, it will be used for both axes.
 
 .. image:: cumulative.png
 
@@ -167,7 +184,7 @@ The image shows regions where the order parameters are low (in red) and high (in
 
  .. image:: image1aa.png
 
-path_arr_arr,res=obj.KDEAnalysisSelection(select_res,Nframes=1000,zlim=15,show=False,legend=False)
+
 
 
 
@@ -211,7 +228,16 @@ Voronoi2D
 :code:`Voronoi2D` also projects properties to a 2D grid, but using a different method.
 
 
-:code:`Voronoi2D` first constructs a Voronoi diagram using the positions of lipid head groups (typically lipid P-atoms), and mapping them into a :math:`m\times m` grid. The mapping step is done on each frame as illustrated in the figure below, and averages computed across n frames. At each step, the value of the computed property is assigned to the grid squares that correspond to the xy position of each lipid.  The output, similar to :code:`Cumulative2D`, is a matrix :math:`m \times m`, along with the edges :math:`[x_{\text{min}}, x_{\text{max}}, y_{\text{min}}, y_{\text{max}}]`.
+:code:`Voronoi2D` first constructs a Voronoi diagram using the positions of lipid head groups (typically lipid P-atoms), and mapping
+them into a :math:`m\times m` grid. The mapping step is done on each frame as illustrated in the figure below, and averages computed
+across n frames. At each step, the value of the computed property is assigned to the grid squares that correspond to the xy position
+of each lipid.  The output, similar to :code:`Cumulative2D`, is a matrix :math:`m \times m`, along with the
+edges :math:`[x_{\text{min}}, x_{\text{max}}, y_{\text{min}}, y_{\text{max}}]`.
+
+.. note::
+    The current version allows to select different number of bins for the x and y axis. The default is to use the same number of
+    bins for both axes. You can control this by passing a list of two values to :code:`nbins` parameter. For example, to set
+    50 bins for the x axis and 100 for the y axis, use :code:`nbins = [50, 100]`. If you pass an integer, it will be used for both axes.
 
 .. image:: voronoii.png
 
@@ -230,12 +256,15 @@ To import :code:`Voronoi2D` type:
 Call the class using an :code:`mda.AtomGroup` or :code:`mda.Universe` as follows:
 
 .. code-block:: python
-
     tpr = "md_membrane_nowater.tpr" # Replace with your tpr or gro file
     xtc = "md_membrane_nowater.xtc" # Replace with your xtc file
 
-    universe = mda.Universe(tpr,xtc) # Define a universe with the trajectories
 
+    universe = mda.Universe(tpr,xtc) # Define a universe with the trajectories
+.. note::
+    The current version allows to select different number of bins for the x and y axis. The default is to use the same number of
+    bins for both axes. You can control this by passing a list of two values to :code:`nbins` parameter. For example, to set
+    50 bins for the x axis and 100 for the y axis, use :code:`nbins = [50, 100]`. If you pass an integer, it will be used for both axes.
     membrane = Voronoi2D(universe,   # load the universe
                     verbose = False, # Does not print initial information
                     nbins = 100)
@@ -356,7 +385,7 @@ Splay Angle
 PackingDefects
 ^^^^^^^^^^^^^^^
 
-The membrane surface topology is highly dynamic, different lipid species and interactions with other biomolecules result in local changes that can be identified using :code:`2Danalysis` methods. Lipid packing defects analysis is used to quantify the exposure of the hydrophobic membrane core. :code:`PackingDefects`code allows efficient and robust statistical analysis of lipid packing deffects on the membrane surface. The analysis can be done for a single frame as well as for the full trajectory.
+The membrane surface topology is highly dynamic, different lipid species and interactions with other biomolecules result in local changes that can be identified using :code:`2Danalysis` methods. Lipid packing defects analysis is used to quantify the exposure of the hydrophobic membrane core. :code:`PackingDefects` code allows efficient and robust statistical analysis of lipid packing deffects on the membrane surface. The analysis can be done for a single frame as well as for the full trajectory.
 
 Import this class as follows:
 
@@ -371,8 +400,8 @@ Call the class using an :code:`mda.AtomGroup` or :code:`mda.Universe` as follows
 
 .. code-block:: python
 
-    tpr = "md_membrane_nowater.tpr" # Replace with your tpr or gro file
-    xtc = "md_membrane_nowater.xtc" # Replace with your xtc file
+    tpr = "mlkl_membrane.gro" # Replace with your tpr or gro file
+    xtc = "mlkl_membrane.xtc" # Replace with your xtc file
 
     universe = mda.Universe(tpr,xtc) # Define a universe with the trajectories
 
@@ -420,6 +449,7 @@ Multiple Frames
 For statistical analysis of packing deffects across several frames, :code:`PackingDefects` returns a pandas dataframe and an array with the size of individual packing defects along the trajectory.
 
 To run the analysis over n frames type:
+
 .. code-block:: python
 
     data_df, numpy_sizes = membrane.packing_defects_stats(nbins = 400,

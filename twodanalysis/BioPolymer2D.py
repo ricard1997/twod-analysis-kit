@@ -1236,7 +1236,7 @@ class BioPolymer2D:
             # norm_val_plot=sorted_df['Count'].iloc[i]/max_val
             pos=sorted_df[['X','Y','Z']].iloc[i]
             ax.plot(pos['X'],pos['Y'], 'o',color=color,
-                    label=f'{sorted_df['ResNames'].iloc[i]} {sorted_df['ResIDs'].iloc[i]} ({norm_val*100:.2f})')
+                    label=f"{sorted_df['ResNames'].iloc[i]} {sorted_df['ResIDs'].iloc[i]} ({norm_val*100:.2f})")
             ax.scatter(pos['X'],pos['Y'], s=(max_circle_size*norm_val)**2, alpha=.5, color=color)
             # ax.scatter(pos['X'],pos['Y'], s=(max_circle_size*norm_val_plot)**2, alpha=.5, color=color)
         ax.set_xlabel(r'X-axis($\AA$)',)#fontsize=20)

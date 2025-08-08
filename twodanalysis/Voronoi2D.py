@@ -34,6 +34,40 @@ class Voronoi2D(MembProp):
                 connection_chains = None,
                 working_lip = None,
                 ):
+        """ Class to compute the Voronoi tessalation for a given universe. It uses the Voronoi class from scipy.spatial
+
+        Parameters
+        ----------
+        universe : MDAnalysis.core.universe.Universe
+            Universe to be used for the analysis
+        lipid_list : list, optional
+            list of lipids to be considered for Voronoi tesselation, by default None
+        verbose : bool, optional
+            Descriptive tool, by default False
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
+            If None, it uses the default value of 180
+        edges : list, optional
+            A list with the limits of the grid [xmin,xmax,ymin,ymax], by default None
+            If None, it uses the min and max values of the atoms in the first frame.
+        connection_chains : dict, optional
+            dictionary with the connection chains for the lipids, by default None
+            It is a dictionary with the lipid name as key and a list of lists/tuples as value. The lists/tuples contains the
+            atoms that connect the headgroup and the lipid tails. For more details refer to When problems arise section.
+        working_lip : dict, optional
+            dictionary with the working lipids, by default None
+            It is a dictionary with the lipid name as key and a dictionary as value. The dictionary contains the atoms that
+            are used as the head reference (Commonly P for phospholipids). The minimum you should pass to this dictionary is the key
+            "head". However, you can also pass other keys such as "last_c" to define the last and first carbon of the tail or charge.
+            For example, for a phospholipid you can pass the following dictionary:
+            working_lip = {"DOPC": {"head": "P",
+                                    "charge": 0,}}
+            The only key needed is "head". Further entries are inferef with MembProp class.
+
+
+        """
         super().__init__(universe,
                          lipid_list=lipid_list,
                          verbose=verbose,
@@ -84,7 +118,7 @@ class Voronoi2D(MembProp):
         splay : bool,
             If True, it computes the splay angle for the lipids.
         function: function:
-            Function that takes mda.Atomgroup and returns two arrays: (1) array with ids
+            Function that takes mda. Atomgroup and returns two arrays: (1) array with ids
             (2) array with value of properties
         Returns
         -------
@@ -237,8 +271,11 @@ class Voronoi2D(MembProp):
             [x,y] positions of the points to be considered in the voronoi plot
         voronoi_property : ndarray(:)
             Areas corresponding to the points
-        nbins : int
-            number of bins for the grid
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
+            If None, it uses the default value of 180
         edges : list(float)
             A list with the lipids of the grid [xmin,xmax,ymin,ymax], defaults to None
 
@@ -306,8 +343,11 @@ class Voronoi2D(MembProp):
             Frames to skip, by default None. If None uses all the trajectory
         lipid_list : list, optional
             lipids involved in the computation, by default None
-        nbins : int, optional
+        nbins : int or list, optional
             number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
+            If None, it uses the default value of 180
         edges : list, optional
             A list with the limits of the grid [xmin,xmax,ymin,ymax]
 
@@ -391,8 +431,11 @@ class Voronoi2D(MembProp):
             windows size (number of frames), by default 10
         lipid_list : list, optional
             lipids to be included in the analysis, by default None
-        nbins : int, optional
-            nimber of bins in the grid, by default 180
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
+            If None, it uses the default value of 180
         edges : list, optional
             list with the edges of the grid [xmin,xmax,ymin,ymax], by default None
 
@@ -440,8 +483,6 @@ class Voronoi2D(MembProp):
 
         Parameters
         ----------
-        layer : str, optional
-            working lipid layer, by default "top"
         start : int, optional
             Frame to start, by default None. If None uses all the trajectory
         final : int, optional
@@ -450,8 +491,11 @@ class Voronoi2D(MembProp):
             Frames to skip, by default None. If None uses all the trajectory
         lipid_list : list, optional
             lipids involved in the computation, by default None
-        nbins : int, optional
+        nbins : int or list, optional
             number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
+            If None, it uses the default value of 180
         edges : list, optional
             A list with the limits of the grid [xmin,xmax,ymin,ymax]
 
@@ -539,8 +583,11 @@ class Voronoi2D(MembProp):
             Frames to skip, by default None. If None uses all the trajectory
         lipid_list : list, optional
             lipids involved in the computation, by default None
-        nbins : int, optional
+        nbins : int or list, optional
             number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
+            If None, it uses the default value of 180
         edges : list, optional
             A list with the limits of the grid [xmin,xmax,ymin,ymax]
 
@@ -599,8 +646,11 @@ class Voronoi2D(MembProp):
             Frames to skip, by default None. If None uses all the trajectory
         lipid_list : list, optional
             lipids involved in the computation, by default None
-        nbins : int, optional
+        nbins : int or list, optional
             number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
+            If None, it uses the default value of 180
         edges : list, optional
             A list with the limits of the grid [xmin,xmax,ymin,ymax]
 
@@ -660,6 +710,42 @@ class Voronoi2D(MembProp):
                      nbins = None,
                      edges = None,
                      ):
+        """Function to compute the order parameter for a given lipid in a given layer. It uses the voronoi tessalation
+        to compute the order parameter and then maps it to a 2D grid. The order parameter is computed using the angles
+        between the two chains of the lipid. The order parameter is defined as S = 1/2 * (3 * cos^2(theta) - 1)
+        where theta is the angle between the two chains of the lipid.
+        The order parameter is computed for each chain and then averaged to obtain the final order parameter.
+
+        Parameters
+        ----------
+        lipid : str
+            lipid to compute the order parameter
+        layer : str
+            layer to compute the order parameter
+        n_chain : list(int), optional
+            length of the chain involved in the computation, e.g., [16,18], by default None
+        start : int, optional
+            Frame to start, by default None. If None uses all the trajectory
+        final : int, optional
+            final frame, by default None. If None uses all the trajectory
+        step : int, optional
+            Frames to skip, by default None. If None uses all the trajectory
+        lipid_list : list, optional
+            lipids involved in the computation, by default None
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
+            If None, it uses the default value of 180
+        edges : list, optional
+            A list with the limits of the grid [xmin,xmax,ymin,ymax], by default None
+
+
+        Returns
+        -------
+        ndarray
+            Array with the 2D order parameter, edges
+        """
         start = self.start if start is None else start
         final = self.final if final is None else final
         step = self.step if step is None else step
@@ -720,6 +806,37 @@ class Voronoi2D(MembProp):
                      nbins = None,
                      edges = None,
                      ):
+        """Function to compute the order parameter for all specified lipids (average them) in a given layer.
+        It uses the voronoi tessalation to compute the order parameter and then maps it to a 2D grid. The order
+        parameter is computed using the angles between the two chains of the lipid. The order parameter is
+        defined as S = 1/2 * (3 * cos^2(theta) - 1) where theta is the angle between the two chains of the lipid.
+
+        Parameters
+        ----------
+        lipid_list : list, optional
+            lipids involved in the computation, by default None
+        layer : str
+            layer to compute the order parameter
+        chain : str
+            chain to compute the order parameter, by default "both". It can be sn1/sn2/both
+        start : int, optional
+            Frame to start, by default None. If None uses all the trajectory
+        final : int, optional
+            final frame, by default None. If None uses all the trajectory
+        step : int, optional
+            Frames to skip, by default None. If None uses all the trajectory
+        nbins : int or list, optional
+            number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
+            If None, it uses the default value of 180
+        edges : list, optional
+            A list with the limits of the grid [xmin,xmax,ymin,ymax], by default None
+        Returns
+        -------
+        ndarray
+            Array with the 2D order parameter, edges
+        """
         order_matrices = []
 
 
@@ -751,6 +868,9 @@ class Voronoi2D(MembProp):
 
         Parameters
         ----------
+        function : function
+            Function that takes mda. Atomgroup and returns two arrays: (1) array with ids
+            (2) array with value of properties
         layer : str, optional
             working lipid layer, by default "top"
         start : int, optional
@@ -761,8 +881,11 @@ class Voronoi2D(MembProp):
             Frames to skip, by default None. If None uses all the trajectory
         lipid_list : list, optional
             lipids involved in the computation, by default None
-        nbins : int, optional
+        nbins : int or list, optional
             number of bins for the grid, by default None
+            If int, it is the same for both dimensions. If list, it is a list with the number of bins for each dimension
+            e.g., [nbins1, nbins2]
+            If None, it uses the default value of 180
         edges : list, optional
             A list with the limits of the grid [xmin,xmax,ymin,ymax]
 
