@@ -752,17 +752,17 @@ class Voronoi2D(MembProp):
         nbins = self.nbins if nbins is None else nbins
         edges = self.edges if edges is None else edges
 
-
+        n_chain1 = self.chain_info[lipid][0] if n_chain is None else n_chain[0]
+        n_chain2 = self.chain_info[lipid][1] if n_chain is None else n_chain[1]
+        chain_structure = self.extract_chain_info(lipid)
         def get_ids(lipids):
-            n_chain1 = self.chain_info[lipid][0] if n_chain is None else n_chain[0]
-            n_chain2 = self.chain_info[lipid][1] if n_chain is None else n_chain[1]
             layer_lip = lipids.select_atoms(f"resname {lipid}")
             angles = []
             if n_chain1 !=0:
-                angles_sn1 = OrderParameters.individual_order_sn1(layer_lip, lipid, n_chain1)
+                angles_sn1 = OrderParameters.individual_order_sn1(layer_lip, n_chain1, atoms_inv=chain_structure[1])
                 angles.append(angles_sn1.T)
             if n_chain2 !=0:
-                angles_sn2 = OrderParameters.individual_order_sn2(layer_lip, lipid, n_chain2)
+                angles_sn2 = OrderParameters.individual_order_sn2(layer_lip, n_chain2, atoms_inv=chain_structure[0])
                 angles.append(angles_sn2.T)
             angles = np.concatenate(angles, axis=1)
 
