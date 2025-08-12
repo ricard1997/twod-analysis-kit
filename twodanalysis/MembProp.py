@@ -199,11 +199,28 @@ class MembProp:
         # Guess the chain length of lipids. Chain sn2 start with C2 and chain sn1 start with C3
         for lipid in self.lipid_list:
             first_lipid = self.memb.select_atoms(f"resname {lipid}").resids[0]
-            actual_sn1 = self.memb.select_atoms(f"resid {first_lipid} and name C3*")
-            actual_sn2 = self.memb.select_atoms(f"resid {first_lipid} and name C2*")
-            actual_sn1 = actual_sn1.names
-            actual_sn2 = actual_sn2.names
-            self.chain_info[lipid] = [len(actual_sn1) - 2, len(actual_sn2) - 2]
+
+            chain_l = []
+            tail = self.memb.select_atoms(f"resid {first_lipid}")
+            for bond in self.connection_chains[lipid]:
+
+                _ , chaintemp = self.cut_structure(
+                    tail,
+                    bond,
+                    )
+                c_in_node = [n for n in chaintemp.nodes if "C" in str(n)]
+                chain_l.append(len(c_in_node))
+            print(chain_l, lipid)
+            try:
+                if len(chain_l) == 2:
+                    chain_l = [chain_l[1]] + [chain_l[0]]
+                else:
+                    chain_l = [chain_l[1]] +[chain_l[0]]  + [chain_l[2:]]
+            except:
+                pass
+
+
+            self.chain_info[lipid] = chain_l
 
     def guess_last_cs(self):
         for lipid in self.lipid_list:
