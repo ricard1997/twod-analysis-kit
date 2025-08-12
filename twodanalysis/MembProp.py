@@ -565,6 +565,7 @@ class MembProp:
             If the bond does not cut the structure into two parts, it raises a ValueError.
 
         """
+
         try:
             bonds = structure.bonds.indices
             #print(bonds)
@@ -616,15 +617,20 @@ class MembProp:
     def extract_chain_info(self, lipid):
         self._store_fist_lipids()
         lipids_ids = self.first_lipids
-        _, chain0 = self.cut_structure(
+
+
+        chains = []
+        for chain in self.connection_chains[lipid]:
+
+            _, chaintemp = self.cut_structure(
                     self.memb.select_atoms(f"resid {lipids_ids[lipid]}"),
-                    self.connection_chains[lipid][0],
+                    chain,
                     )
-        _, chain1 = self.cut_structure(
-                    self.memb.select_atoms(f"resid {lipids_ids[lipid]}"),
-                    self.connection_chains[lipid][1],
-                    )
-        return self.chain_structure(chain0), self.chain_structure(chain1)
+            chains.append(chaintemp)
+
+
+
+        return [self.chain_structure(tail) for tail in chains]
 
 
 
