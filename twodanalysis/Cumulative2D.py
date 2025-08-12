@@ -196,7 +196,7 @@ class Cumulative2D(MembProp):
 
 
         edges = self.edges if edges is None else edges
-
+        print(n_chain)
         if method == "numpy":
             H, edges = self.numpyhistogram2D(matrix[:,:2],
                                              matrix[:,2:],
@@ -454,9 +454,9 @@ class Cumulative2D(MembProp):
         matrices = []
         for key in lipid_list:
             n_chain = lipids[key].copy()
-            if chain == "sn1":
+            if chain == "sn2":
                 n_chain[0] = 0
-            elif chain == "sn2":
+            elif chain == "sn1":
                 n_chain[1] = 0
 
             H, edges = self.order_matrix(key, layer, nbins, n_chain,edges,
