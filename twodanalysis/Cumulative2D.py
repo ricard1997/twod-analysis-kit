@@ -148,13 +148,17 @@ class Cumulative2D(MembProp):
         all_head = self.all_head
 
         n_chain = self.chain_info[lipid] if n_chain is None else n_chain
+        chain_structure = self.extract_chain_info(lipid)
 
         try:
             n_chain1 = n_chain[0]
             n_chain2 = n_chain[1]
+
         except:
             n_chain1 = n_chain
             n_chain2 = 0
+
+
 
         matrix = [] # this will store a matrix of the shape (2+n_chain,
         for ts in self.u.trajectory[start:final:step]:
@@ -168,11 +172,11 @@ class Cumulative2D(MembProp):
             only_p = layer_at.select_atoms(f"name {self.working_lip[lipid]['head']}")
             positions = only_p.positions[:,:2]
             if n_chain1 !=0:
-                angles_sn1 = OrderParameters.individual_order_sn1(layer_at, lipid, n_chain1)
+                angles_sn1 = OrderParameters.individual_order_sn1(layer_at, n_chain1, atoms_inv=chain_structure[1][:n_chain1])
                 angles_sn1 = angles_sn1.T
                 positions = np.concatenate([positions, angles_sn1], axis = 1)
             if n_chain2 != 0:
-                angles_sn2 = OrderParameters.individual_order_sn2(layer_at, lipid, n_chain2)
+                angles_sn2 = OrderParameters.individual_order_sn2(layer_at, n_chain2, atoms_inv=chain_structure[0][:n_chain2])
                 angles_sn2 = angles_sn2.T
                 positions = np.concatenate([positions, angles_sn2], axis = 1)
             if self.periodic:
@@ -438,9 +442,6 @@ class Cumulative2D(MembProp):
         ndarray(n,n), ndarray(n+1)
             matrix containing the 2d order, edges of the matrix
         """
-
-
-
         if nbins is None:
             nbins = self.nbins
 
@@ -450,17 +451,9 @@ class Cumulative2D(MembProp):
 
         lipids = self.chain_info
 
-
-
-
-
-
-
         matrices = []
         for key in lipid_list:
-
             n_chain = lipids[key].copy()
-
             if chain == "sn1":
                 n_chain[0] = 0
             elif chain == "sn2":
