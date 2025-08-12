@@ -235,11 +235,14 @@ class OrderParameters:
              final = -1,
              step = 1,
              n_chain = None,
+             connection_chains = None,
              ):
 
         lipids = universe.select_atoms(selection)
         lipid_name = self._check_one_lipid(lipids)
-        membrane =  MembProp(lipids)
+
+        membrane =  MembProp(lipids, connection_chains=connection_chains)
+
         if n_chain is None:
             membrane.guess_chain_lenght()
             chain_info = membrane.chain_info
@@ -271,7 +274,7 @@ class OrderParameters:
         return [carbons[chain], final]
 
     @classmethod
-    def window_scd(self,universe, selection, start, final ,window, chain, step = 1):
+    def window_scd(self,universe, selection, start, final ,window, chain, step = 1, connection_chains = None):
 
 
         length = len(universe.trajectory[start:final:step])
@@ -285,7 +288,9 @@ class OrderParameters:
                                      chain,
                                      start = start_local,
                                      final = final_local,
-                                     step = 1)
+                                     step = 1,
+                                     connection_chains = connection_chains
+                                     )
 
             values.append(scd1)
 
