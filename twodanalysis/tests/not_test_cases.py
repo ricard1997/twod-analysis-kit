@@ -25,9 +25,14 @@ from twodanalysis.data.files import MEMBRANE_TPR, MEMBRANE_XTC
 tpr = MEMBRANE_TPR
 traj = MEMBRANE_XTC
 
+tpr = "reduced_traj.gro"
+traj = "reduced_traj.xtc"
+
+tpr = "membrane.gro"
+traj = "membrane.xtc"
 
 
-u = mda.Universe(MEMBRANE_TPR, MEMBRANE_XTC, )
+u = mda.Universe(tpr, traj, )
 import re
 
 def natural_key(node_name):
@@ -43,21 +48,59 @@ def natural_key(node_name):
         return (node_name, 0)  # fallback
 
 
-nbins = 150
-start = 50
-final = 100
+nbins = 50
+start = 1000
+final = 1400
 layer = "top"  # or "bot", depending on the layer you want to analyze
-membrane = Voronoi2D(u, nbins = nbins)
+
+
+
+connection_chains = connection_chains = {
+        "PSM" : [("C1F", "C2F"), ("C2S", "C3S")],
+    }
+
+membrane = Voronoi2D(u, nbins = nbins, connection_chains=connection_chains,)
+
 lipid_list = membrane.lipid_list.copy()
 lipid_list.remove("CHL1")
 print(lipid_list)
-carbons, scd, error = analysis.OrderParameters.window_scd(u, selection="resname POPE", start=0, final=77, window = 10, chain ="sn2", step = 1)
-plt.errorbar(carbons, scd, yerr=error, fmt='o', label='SCD Order Parameter')
+print(len(u.trajectory))
+
+
+scd, edges = membrane.voronoi_all_lip_order(lipid_list=lipid_list,
+                                            layer=layer,
+                                            start=start,
+                                            final=final,
+                                            chain="sn1"
+
+                                            )
+plt.imshow(scd, cmap='Spectral', extent=edges)
+plt.colorbar(label='SCD Order Parameter')
+plt.title(f"SCD Order Parameter for {layer} layer")
+plt.xlabel('X Position (nm)')
+plt.ylabel('Y Position (nm)')
+plt.show()
+
+"""
+for lipid in lipid_list:
+    carbons, scd, error = analysis.OrderParameters.window_scd(u,
+                                                          selection=f"resname {lipid}",
+                                                            start=0,
+                                                              final=4000,
+                                                                window = 400,
+                                                                  chain ="sn1",
+                                                                    step = 2,
+                                                                    connection_chains=connection_chains)
+    carbons = list(range(len(scd)))
+    print(len(carbons), len(scd), len(error))
+    plt.errorbar(carbons, scd, yerr=error, fmt='o-', label=f"{lipid}")
+plt.xticks(rotation=45)
+plt.legend()
 plt.show()
 
 print(scd)
 
-
+"""
 #membrane._store_fist_lipids()
 #lipids_ids = membrane.first_lipids
 """
