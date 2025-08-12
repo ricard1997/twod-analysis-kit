@@ -138,6 +138,7 @@ class MembProp:
             test_lips = self.working_lip.keys()
             if lipid not in test_lips:
                 self.working_lip[lipid] = {"head" : "P", "charge" : 0}
+            if lipid not in list(self.connection_chains.keys()):
                 self.connection_chains[lipid] = [("C21", "C22"), ("C31", "C32")]
 
 
