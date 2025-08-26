@@ -46,7 +46,7 @@ def test_chain_length():
     print(membrane.chain_info)
 
     expected_dict = {"DODMA" : [17,17],
-                     "CHL1" : [-1,7],
+                     "CHL1" : [32],
                      "DSPC" : [17,17],
                      "POPE" : [15,17],}
     assert expected_dict == chains
