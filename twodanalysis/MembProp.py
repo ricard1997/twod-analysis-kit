@@ -19,6 +19,19 @@ import pandas as pd
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+import re
+
+def natural_key(node_name):
+    """
+    Key function to sort strings like C1, C2, C10 numerically.
+    Extracts the prefix and numeric part.
+    """
+    match = re.match(r"([A-Za-z]+)(\d+)", str(node_name))
+    if match:
+        prefix, number = match.groups()
+        return (prefix, int(number))
+    else:
+        return (node_name, 0)  # fallback
 
 
 class MembProp:
@@ -125,12 +138,13 @@ class MembProp:
             test_lips = self.working_lip.keys()
             if lipid not in test_lips:
                 self.working_lip[lipid] = {"head" : "P", "charge" : 0}
+            if lipid not in list(self.connection_chains.keys()):
                 self.connection_chains[lipid] = [("C21", "C22"), ("C31", "C32")]
 
 
         self.working_lip = self.working_lip if working_lip is None else working_lip
 
-        
+
         head_atoms = set([self.working_lip[lipid]["head"] for lipid in self.working_lip])
         if "P" in head_atoms:
             self.all_head = self.memb.select_atoms(self.build_resname(self.lipid_list) + " and name P")
@@ -176,16 +190,37 @@ class MembProp:
         self.memb.radii = radii_array
 
 
+    #def infer_chain_names(self, lipid, chain):
+    #    lipid_w = self.memb.select_atoms(f"resname {lipid}")
+
+
 
     def guess_chain_lenght(self):
         # Guess the chain length of lipids. Chain sn2 start with C2 and chain sn1 start with C3
         for lipid in self.lipid_list:
             first_lipid = self.memb.select_atoms(f"resname {lipid}").resids[0]
-            actual_sn1 = self.memb.select_atoms(f"resid {first_lipid} and name C3*")
-            actual_sn2 = self.memb.select_atoms(f"resid {first_lipid} and name C2*")
-            actual_sn1 = actual_sn1.names
-            actual_sn2 = actual_sn2.names
-            self.chain_info[lipid] = [len(actual_sn1) - 2, len(actual_sn2) - 2]
+
+            chain_l = []
+            tail = self.memb.select_atoms(f"resid {first_lipid}")
+            for bond in self.connection_chains[lipid]:
+
+                _ , chaintemp = self.cut_structure(
+                    tail,
+                    bond,
+                    )
+                c_in_node = [n for n in chaintemp.nodes if "C" in str(n)]
+                chain_l.append(len(c_in_node))
+            print(chain_l, lipid)
+            try:
+                if len(chain_l) == 2:
+                    chain_l = [chain_l[1]] + [chain_l[0]]
+                else:
+                    chain_l = [chain_l[1]] +[chain_l[0]]  + [chain_l[2:]]
+            except:
+                pass
+
+
+            self.chain_info[lipid] = chain_l
 
     def guess_last_cs(self):
         for lipid in self.lipid_list:
@@ -453,14 +488,18 @@ class MembProp:
 
             #print(lipid , ":", self.polar_dict[lipid])
 
+    def _store_fist_lipids(self):
+        self.first_lipids = {}
+        for lipid in self.lipid_list:
+            first_lipid = self.memb.select_atoms(f"resname {lipid}")
+            first_id = first_lipid.resids[0]
+            first_lipid = first_lipid.select_atoms(f"resid {first_id}")
+            self.first_lipids[lipid] = first_id
 
     def nx_chain_names(self):
 
-
-
-
         self.first_lipids = {}
-
+        carbon_conections = {}
 
         for lipid in self.lipid_list:
             first_lipid = self.memb.select_atoms(f"resname {lipid}")
@@ -470,7 +509,12 @@ class MembProp:
 
 
             if lipid != "CHL1":
-                bonds = mda.topology.guessers.guess_bonds(first_lipid, first_lipid.positions)
+
+                try:
+                    bonds = first_lipid.bonds.indices
+                    #print(bonds)
+                except:
+                    bonds = mda.topology.guessers.guess_bonds(first_lipid, first_lipid.positions)
                 nodes = set()
                 for edge in bonds:
                     nodes.update(edge)
@@ -507,13 +551,104 @@ class MembProp:
                         carbon_conections[carbon] = connected_atoms
 
 
-
+                print("here", carbon_conections)
 
             self.chain_conections[lipid] = carbon_conections
 
         #print(self.chain_conections)
 
+    def cut_structure(self, structure, bond):
+        """Tool needed to cut structures in two parts based on a bond.
+        This function is used to cut the structure in two parts based on a bond.
+        It uses NetworkX to create a graph of the structure and then removes the bond.
+        It then finds the connected components of the graph and returns the two parts.
+        If the bond does not cut the structure into two parts, it raises a ValueError.
 
+
+        Parameters
+        ----------
+        structure : MDAnalysis Universe or AtomGroup
+            Any structure that we aim to cut
+        bond : tuple
+            tuple with the names of the atoms of the bond we want to cut
+            e.g. ("C21", "C22") or ("C31", "C32")
+
+        Returns
+        -------
+        part1, part2 : NetworkX Graph
+            Two parts of the structure after cutting it based on the bond.
+        Raises
+        ------
+        ValueError
+            If the bond does not cut the structure into two parts, it raises a ValueError.
+
+        """
+
+        try:
+            bonds = structure.bonds.indices
+            #print(bonds)
+        except:
+            bonds = mda.topology.guessers.guess_bonds(structure, structure.positions)
+        nodes = set()
+        for edge in bonds:
+            nodes.update(edge)
+        nodes = sorted(nodes)
+
+        names = structure.names
+        map_node_name = {nodes[i]:names[i] for i in range(len(nodes))}
+
+        edges_labeled = [(map_node_name[u], map_node_name[v]) for u,v in bonds]
+
+        G = nx.Graph()
+        G.add_edges_from(edges_labeled)
+        G.remove_edge(bond[0], bond[1])
+        components = list(nx.connected_components(G))
+        subgraphs = [G.subgraph(c).copy() for c in components]
+        if len(subgraphs) != 2:
+            raise ValueError("The bond does not cut the structure into two parts")
+
+        part1 = subgraphs[0] if bond[0] in subgraphs[0].nodes else subgraphs[1]
+        part2 = subgraphs[1] if bond[1] in subgraphs[1].nodes else subgraphs[0]
+
+        return part1, part2
+
+
+    def chain_structure(self, chain):
+        """Function to get the structure of the chain in the shape [C,Hi,Hj] for any nomemclature.
+
+        Parameters
+        ----------
+        chain : NetworkX Graph
+            Graph representing a lipid tail
+
+        Returns
+        -------
+        list
+            List containing various list of the form [C, Hi, Hj] where C is the carbon and Hi and Hj are the hydrogens connected to it.
+        """
+        c_in_node = [n for n in chain.nodes if "C" in str(n)]
+        c_in_node = sorted(c_in_node, key=natural_key)
+        neighbors = [list(chain.neighbors(n)) for n in c_in_node]
+        neighbors = [[c_in_node[i]] + [item for item in neighbors[i] if "C" not in item] for i in range(len(c_in_node))]
+        return neighbors
+
+    def extract_chain_info(self, lipid):
+        self._store_fist_lipids()
+        lipids_ids = self.first_lipids
+
+
+        chains = []
+        for chain in self.connection_chains[lipid]:
+
+            _, chaintemp = self.cut_structure(
+                    self.memb.select_atoms(f"resid {lipids_ids[lipid]}"),
+                    chain,
+                    )
+            chains.append(chaintemp)
+
+
+
+        return [self.chain_structure(tail) for tail in chains]
 
 
 

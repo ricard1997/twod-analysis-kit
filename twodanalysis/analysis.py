@@ -5,10 +5,10 @@ class OrderParameters:
 
 
     @classmethod
-    def individual_order_sn1(self, sel, lipid, n_chain):
+    def individual_order_sn1(self, sel, n_chain, atoms_inv = False):
         """
 
-        Code to loop over the number of carbons_summary_ in the lipid tail and get a list with the carbon and its
+        Code to loop over the number of carbons in the lipid tail and get a list with the carbon and its
         hydrogens for each carbon in the lipid tail: :math:`[C3i, HiX, HiY, ...]`. This list is passed to get_vectors which
         return the averages of each i-th carbon. This code returns an array of dim n_chain with the mean :math:`\braket{cos(\theta_i)^2}`
 
@@ -39,32 +39,48 @@ class OrderParameters:
 
 
         # Loop over carbons
-        for i in range(n_chain):
-            # Define selections for H and C in the chain
-            #print(f"Value of the chain {i} sn1")
-            selections = [
-                            f"name C3{i+2}",
-                            f"name H{i+2}X and not name HX",
-                            f"name H{i+2}Y and not name HY",
-                            f"name H{i+2}Z and not name HZ"
-                        ]
-            #print(selections)
+        if not atoms_inv:
+            for i in range(n_chain):
+                # Define selections for H and C in the chain
+                #print(f"Value of the chain {i} sn1")
+
+                selections = [
+                                f"name C3{i+2}",
+                                f"name H{i+2}X and not name HX",
+                                f"name H{i+2}Y and not name HY",
+                                f"name H{i+2}Z and not name HZ"
+                            ]
+                #print(selections)
 
 
-            # Define a list to store atoms
-            lista = []
+                # Define a list to store atoms
+                lista = []
 
-            for selection in selections:
-                atoms = sel.select_atoms(selection)
+                for selection in selections:
+                    atoms = sel.select_atoms(selection)
 
 
-                if atoms.n_atoms != 0:
-                    lista.append(atoms)
-            # Call get_individual that computes the cos^2(theta) for each carbon.
-            chains.append(self.get_individual(lista))
+                    if atoms.n_atoms != 0:
+                        lista.append(atoms)
+                # Call get_individual that computes the cos^2(theta) for each carbon.
+                chains.append(self.get_individual(lista))
 
-            #print(i, self.get_individual(lista).shape, self.get_individual(lista))
-        chains = np.array(chains) # Expect array of dim (n_chain, n_lipids)
+                #print(i, self.get_individual(lista).shape, self.get_individual(lista))
+            chains = np.array(chains) # Expect array of dim (n_chain, n_lipids)
+
+        else:
+
+            for atom_list in atoms_inv:
+                selections = [f"name {atom_list[i]}" for i in range(len(atom_list))]
+
+                lista = []
+                for selection in selections:
+                    atoms = sel.select_atoms(selection)
+                    if atoms.n_atoms != 0:
+                        lista.append(atoms)
+
+                chains.append(self.get_individual(lista))
+            chains = np.array(chains) # Expect array of dim (n_chain, n_lipids)
 
         return chains
 
@@ -116,7 +132,7 @@ class OrderParameters:
 
     # Get the cos^2(theta) for each carbon in the selection, for sn2
     @classmethod
-    def individual_order_sn2(self, sel, lipid, n_chain):
+    def individual_order_sn2(self, sel, n_chain, atoms_inv = False):
 
         r"""
 
@@ -149,41 +165,53 @@ class OrderParameters:
         # Define list to store the chain cos^2(theta)
         chains = []
         # Loop over carbons
-        max_v = 0
-        for i in range(n_chain):
-            # Define selections for H and C in the chain
-            #print(f"Value of the chain {i} sn2")
-            selections = [
-                            f"name C2{i+2}",
-                            f"name H{i+2}R and not name HR",
-                            f"name H{i+2}S and not name HS",
-                            f"name H{i+2}T and not name HT"
-                        ]
-            #if lipid == "POPE" or lipid == "POPS" or lipid == "POPI15" or lipid == "POPI24":
-            #    if selections[0] == "name C29":
-            #        selections[1] = "name H91"
-            #    if selections[0] == "name C210":
-            #        selections[1] = "name H101"
-            # Define a list to store atoms
-            lista = []
+        if not atoms_inv:
+            for i in range(n_chain):
+                # Define selections for H and C in the chain
+                #print(f"Value of the chain {i} sn2")
+                selections = [
+                                f"name C2{i+2}",
+                                f"name H{i+2}R and not name HR",
+                                f"name H{i+2}S and not name HS",
+                                f"name H{i+2}T and not name HT"
+                            ]
+                #if lipid == "POPE" or lipid == "POPS" or lipid == "POPI15" or lipid == "POPI24":
+                #    if selections[0] == "name C29":
+                #        selections[1] = "name H91"
+                #    if selections[0] == "name C210":
+                #        selections[1] = "name H101"
+                # Define a list to store atoms
+                lista = []
 
-            for selection in selections:
-                atoms = sel.select_atoms(selection)
-                if atoms.n_atoms != 0:
-                    lista.append(atoms)
-            if len(lista) == 1:
+                for selection in selections:
+                    atoms = sel.select_atoms(selection)
+                    if atoms.n_atoms != 0:
+                        lista.append(atoms)
+                if len(lista) == 1:
 
-                one_atom = f"name H{i+2}1"
+                    one_atom = f"name H{i+2}1"
 
-                atoms = sel.select_atoms(one_atom)
-                if atoms.n_atoms != 0:
-                    lista.append(atoms)
-            if len(lista) == 1:
-                raise "Something went wrong guessing the atoms in lipid tail"
+                    atoms = sel.select_atoms(one_atom)
+                    if atoms.n_atoms != 0:
+                        lista.append(atoms)
+                if len(lista) == 1:
+                    raise "Something went wrong guessing the atoms in lipid tail"
 
-            angles = self.get_individual(lista)
-            chains.append(angles)
-        chains = np.array(chains) # Expect array of dim (n_chain, n_lipids)
+                angles = self.get_individual(lista)
+                chains.append(angles)
+            chains = np.array(chains) # Expect array of dim (n_chain, n_lipids)
+        else:
+
+            for atom_list in atoms_inv:
+                selections = [f"name {atom_list[i]}" for i in range(len(atom_list))]
+
+                lista = []
+                for selection in selections:
+                    atoms = sel.select_atoms(selection)
+                    if atoms.n_atoms != 0:
+                        lista.append(atoms)
+                chains.append(self.get_individual(lista))
+            chains = np.array(chains) # Expect array of dim (n_chain, n_lipids)
         return chains
 
     def _check_one_lipid(atoms):
@@ -192,22 +220,30 @@ class OrderParameters:
             raise "This function only works for one lipid at a time. Please make sure you use only one lipid"
         return resnames[0]
 
+
+
+
+
+
+
+
+
     @classmethod
-    def scd(self,universe, selection, chain = "sn1",
-             n_chain = None,
+    def scd(self, universe, selection, chain = "sn1",
+
              start = 0,
              final = -1,
              step = 1,
+             n_chain = None,
+             connection_chains = None,
              ):
-
-        print(type(universe))
 
         lipids = universe.select_atoms(selection)
         lipid_name = self._check_one_lipid(lipids)
 
+        membrane =  MembProp(lipids, connection_chains=connection_chains)
 
         if n_chain is None:
-            membrane =  MembProp(lipids)
             membrane.guess_chain_lenght()
             chain_info = membrane.chain_info
             if chain == "sn1":
@@ -216,21 +252,53 @@ class OrderParameters:
                 n_chain = chain_info[lipid_name][1]
             else:
                 raise "This code only support sn1 and sns as chains"
+        chain_structure = membrane.extract_chain_info(lipid_name)
+        carbons = {"sn1" : [chain_structure[1][i][k] for i in range(len(chain_structure[1])) for k in range(len(chain_structure[1][i])) if "C" in chain_structure[1][i][k]],
+                   "sn2" : [chain_structure[0][i][k] for i in range(len(chain_structure[0])) for k in range(len(chain_structure[0][i])) if "C" in chain_structure[0][i][k]]
+                   }
+
 
 
         orders = []
         for _ in universe.trajectory[start:final:step]:
+
             if chain == "sn1":
-                order_data = self.individual_order_sn1(lipids,lipid_name,n_chain)
+                order_data = self.individual_order_sn1(lipids,n_chain, atoms_inv=chain_structure[1])
             elif chain == "sn2":
-                order_data = self.individual_order_sn2(lipids,lipid_name,n_chain)
+                order_data = self.individual_order_sn2(lipids,n_chain, atoms_inv=chain_structure[0])
 
             orders.append(np.mean(order_data, axis = 1))
         orders = np.array(orders)
         final = np.abs(1.5 * np.mean(orders, axis = 0) - 0.5)
-        return final
+
+        return [carbons[chain], final]
+
+    @classmethod
+    def window_scd(self,universe, selection, start, final ,window, chain, step = 1, connection_chains = None):
 
 
+        length = len(universe.trajectory[start:final:step])
+        n_windows = length// window
+        values = []
+
+        for i in range(n_windows):
+            start_local = start + i * window
+            final_local = start + (i+1) * window
+            carbons, scd1 = self.scd(universe, selection,
+                                     chain,
+                                     start = start_local,
+                                     final = final_local,
+                                     step = 1,
+                                     connection_chains = connection_chains
+                                     )
+
+            values.append(scd1)
+
+        values = np.array(values)
+        error = np.std(values, axis = 0)
+        values = np.mean(values, axis = 0)
+
+        return [carbons, values, error]
 
 
 

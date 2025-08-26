@@ -126,4 +126,6 @@ twodanalysis/testing.py
 *.swp
 *.vmd
 *.gif
+*.gro
+*.xtc
 =======
