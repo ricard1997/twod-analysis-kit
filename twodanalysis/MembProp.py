@@ -239,7 +239,7 @@ class MembProp:
                     chain_l = [7]
                 self.chain_info[lipid] = chain_l
 
-            print("################", self.chain_info)
+            #print("################", self.chain_info)
 
 
 
@@ -471,41 +471,39 @@ class MembProp:
             self.first_lipids[lipid] = first_id
 
 
-            try:
-                bonds = first_lipid.bonds.indices
-                #print(bonds)
-            except:
-                bonds = mda.topology.guessers.guess_bonds(first_lipid, first_lipid.positions)
-            #print(bonds.shape)
-            nodes = set()
-            for edge in bonds:
-                nodes.update(edge)
-            nodes = sorted(nodes)
 
-            names = first_lipid.names
-            map_node_name = {nodes[i]:names[i] for i in range(len(nodes))}
+            if self.forcefield == "charmm":
+                G = self.atgroup2nx(first_lipid)
+                non_polar = []
+                for edge in self.connection_chains[lipid]:
+                    G.remove_edge(edge[0], edge[1])
+                    components = list(nx.connected_components(G))
+                    non_polar.append(next(comp for comp in components if edge[1] in comp)) # Stores the tails
 
-            edges_labeled = [(map_node_name[u], map_node_name[v]) for u,v in bonds]
+                self.non_polar_dict[lipid] = [elem for s in non_polar for elem in s]
+                polar = next(comp for comp in components if self.connection_chains[lipid][0][0] in comp)
+                self.polar_dict[lipid] = polar
 
-            G = nx.Graph()
-            G.add_edges_from(edges_labeled)
+            elif self.forcefield == "amber":
 
-            non_polar = []
 
-            for edge in self.connection_chains[lipid]:
-                G.remove_edge(edge[0], edge[1])
+                if lipid != "CHL":
+                    heads_ats = first_lipid
+                    self.polar_dict[lipid] = heads_ats.names
 
-                components = list(nx.connected_components(G))
+                    tail1 = self.u.select_atoms(f"resid {first_id -1}")
+                    tail2 = self.u.select_atoms(f"resid {first_id +1}")
+                    #print("Here: ########", tail1.names, tail2.names, list(tail1.names) + list(tail2.names))
+                    non_polar = list(set(list(tail1.names) + list(tail2.names)))
+                    self.non_polar_dict[lipid] = non_polar
+                else:
+                    self.polar_dict[lipid] = ["O1", "HO1"]
+                    non_polar = first_lipid.names
+                    non_polar_final = [name for name in non_polar if name not in self.polar_dict[lipid]]
+                    self.non_polar_dict[lipid] = non_polar_final
 
-                non_polar.append(next(comp for comp in components if edge[1] in comp))
-                #if lipid == "CHL1":
-                    #print(components, next(comp for comp in components if edge[1] in comp))
 
-            self.non_polar_dict[lipid] = [elem for s in non_polar for elem in s]
 
-            polar = next(comp for comp in components if self.connection_chains[lipid][0][0] in comp)
-
-            self.polar_dict[lipid] = polar
 
             #print(lipid , ":", self.polar_dict[lipid])
 
@@ -531,29 +529,15 @@ class MembProp:
 
             if lipid != "CHL1":
 
-                try:
-                    bonds = first_lipid.bonds.indices
-                    #print(bonds)
-                except:
-                    bonds = mda.topology.guessers.guess_bonds(first_lipid, first_lipid.positions)
-                nodes = set()
-                for edge in bonds:
-                    nodes.update(edge)
-                nodes = sorted(nodes)
 
-                names = first_lipid.names
-                map_node_name = {nodes[i]:names[i] for i in range(len(nodes))}
+                G = self.atgroup2nx(first_lipid)
 
-                edges_labeled = [(map_node_name[u], map_node_name[v]) for u,v in bonds]
-
-                G = nx.Graph()
-                G.add_edges_from(edges_labeled)
 
                 chains = []
                 for edge in self.connection_chains[lipid]:
                     G.remove_edge(edge[0], edge[1])
                     components = list(nx.connected_components(G))
-                    chains.append(next(comp for comp in components if edge[1] in comp))
+                    chains.append(next(comp for comp in components if edge[1] in comp)) # Store the tail of the lipids
 
                 chain_graphs = []
                 carbons = []
@@ -572,7 +556,7 @@ class MembProp:
                         carbon_conections[carbon] = connected_atoms
 
 
-                print("here", carbon_conections)
+                #print("here", carbon_conections)
 
             self.chain_conections[lipid] = carbon_conections
 
@@ -700,8 +684,7 @@ class MembProp:
 
                 chains = [Ch1, Ch2]
 
-        ret = [self.chain_structure(tail) for tail in chains]
-        print(ret)
+
         return [self.chain_structure(tail) for tail in chains]
 
 
