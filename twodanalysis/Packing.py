@@ -11,12 +11,15 @@ class PackingDefects(MembProp):
                 verbose = False,
                 edges = None,
                 nbins = 100,
+                working_lip = None,
+                forcefield = "charmm",
                 ):
 
         super().__init__(universe,
                          lipid_list=lipid_list,
                          connection_chains=connection_chains,
-                         verbose=verbose)
+                         verbose=verbose, forcefield=forcefield, working_lip=working_lip)
+        self.forcefield = forcefield
 
         if edges is None:
             positions = self.all_head.positions[:,:2]
