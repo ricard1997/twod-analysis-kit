@@ -31,7 +31,8 @@ class Cumulative2D(MembProp):
                 nbins = None,
                 periodic = False,
                 working_lip = None,
-                connection_chains = None
+                connection_chains = None,
+                forcefield = "charmm",
                 ):
         """ Class to compute the Voronoi tessalation for a given universe. It uses the Voronoi class from scipy.spatial
 
@@ -74,10 +75,11 @@ class Cumulative2D(MembProp):
                          lipid_list=lipid_list,
                          connection_chains=connection_chains,
                          working_lip=working_lip,
-                         verbose=verbose)
+                         verbose=verbose, forcefield=forcefield)
 
         if edges is None:
             positions = self.all_head.positions[:,:2]
+            print(self.all_head)
             v_min = np.min(positions)
             v_max = np.max(positions)
             self.edges = [v_min, v_max, v_min, v_max]
@@ -129,7 +131,7 @@ class Cumulative2D(MembProp):
         final : int, optional
             Final frame to consider, by default None
         step : int, optional
-            Frames to skip, by default 1
+            Frames to skip, by defaulonnection_chains=connection_chains,t 1
         method : str, optional
             Method to do the averages, by default "numpy"
 
@@ -149,6 +151,7 @@ class Cumulative2D(MembProp):
 
         n_chain = self.chain_info[lipid] if n_chain is None else n_chain
         chain_structure = self.extract_chain_info(lipid)
+        #print(chain_structure)
 
         try:
             n_chain1 = n_chain[0]
@@ -167,16 +170,30 @@ class Cumulative2D(MembProp):
             #Pick atoms in the layer
             if layer == "both":
                 layer_at = self.memb.select_atoms(f"byres ((resname {lipid} and name {self.working_lip[lipid]['head']}))")
+
+
             else:
                 layer_at = self.memb.select_atoms(f"byres ((resname {lipid} and name {self.working_lip[lipid]['head']}) and prop z {self.map_layers[layer]} {z_mean})")
+
+            lipid_resids = layer_at.residues.resids
+
             only_p = layer_at.select_atoms(f"name {self.working_lip[lipid]['head']}")
             positions = only_p.positions[:,:2]
             if n_chain1 !=0:
-                angles_sn1 = OrderParameters.individual_order_sn1(layer_at, n_chain1, atoms_inv=chain_structure[1][:n_chain1])
+                layer_at1 = layer_at
+                if self.forcefield == "amber":
+                    chain1_resids = lipid_resids - 1
+                    layer_at1 = self.u.select_atoms(f"resid {' '.join(map(str, chain1_resids))}")
+                angles_sn1 = OrderParameters.individual_order_sn1(layer_at1, n_chain1, atoms_inv=chain_structure[1][:n_chain1])
                 angles_sn1 = angles_sn1.T
                 positions = np.concatenate([positions, angles_sn1], axis = 1)
             if n_chain2 != 0:
-                angles_sn2 = OrderParameters.individual_order_sn2(layer_at, n_chain2, atoms_inv=chain_structure[0][:n_chain2])
+                layer_at1 = layer_at
+                if self.forcefield == "amber":
+                    chain1_resids = lipid_resids + 1
+                    layer_at1 = self.u.select_atoms(f"resid {' '.join(map(str, chain1_resids))}")
+
+                angles_sn2 = OrderParameters.individual_order_sn2(layer_at1, n_chain2, atoms_inv=chain_structure[0][:n_chain2])
                 angles_sn2 = angles_sn2.T
                 positions = np.concatenate([positions, angles_sn2], axis = 1)
             if self.periodic:
@@ -448,12 +465,15 @@ class Cumulative2D(MembProp):
         lipid_list = list(self.lipid_list)
         if "CHL1" in lipid_list:
             lipid_list.remove("CHL1")
+        if "CHL" in lipid_list:
+            lipid_list.remove("CHL")
 
         lipids = self.chain_info
 
         matrices = []
         for key in lipid_list:
             n_chain = lipids[key].copy()
+            print(n_chain)
             if chain == "sn2":
                 n_chain[0] = 0
             elif chain == "sn1":

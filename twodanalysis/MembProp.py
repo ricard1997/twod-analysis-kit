@@ -43,6 +43,7 @@ class MembProp:
                 connection_chains = None,
                 working_lip = None,
                 verbose = False,
+                forcefield = "charmm",
             ):
         """Class set up common properties and to automatically guess useful membrane properties
          useful for the analyses that can ber performed. It sets up lipid heads (used to identify membrane middle),
@@ -86,19 +87,13 @@ class MembProp:
 
         # Select elements in the membrane (in principle only lipids)
         if lipid_list is None: # Select only elements of the membrane
-
-
             self.memb = self.u.select_atoms("all and not protein and not\
                                              (resname URA or resname GUA\
                                              or resname ADE or resname CYT\
                                              or resname THY)")
-
-
-
             self.lipid_list = list(set(self.memb.residues.resnames))
         else:
             self.memb = self.u.select_atoms(f"{self.build_resname(list(lipid_list))}")
-
             self.lipid_list = list(set(self.memb.residues.resnames))
 
 
@@ -108,6 +103,7 @@ class MembProp:
 
         # Set radius sizes of different elements
         self.radii_dict = None
+        self.forcefield = forcefield
         self.chain_info = {}
         self.chain_conections = {}
         self.non_polar_dict = {}
@@ -115,11 +111,15 @@ class MembProp:
         self.first_lipids = {}
         self.non_polar_visualize = {}
 
+        self.amber_heads = ["PC", "PE", "PS", "PGR", "PGS", "PH", "SPM"]
+
+
         self.working_lip = {
                                 "CHL1" : {"head" :"O3", "charge" : 0},
                                 "DODMA" : {"head" :"N1", "charge" : -0.21},
                                 "DSPC" : {"head" :"P", "charge" : 1.1},
                             }
+
 
         self.connection_chains = {
 
@@ -199,28 +199,49 @@ class MembProp:
         # Guess the chain length of lipids. Chain sn2 start with C2 and chain sn1 start with C3
         for lipid in self.lipid_list:
             first_lipid = self.memb.select_atoms(f"resname {lipid}").resids[0]
-
+            #print("###########",self.memb.select_atoms(f"resname {lipid}").resids)
+            #print("first lipid", first_lipid)
             chain_l = []
             tail = self.memb.select_atoms(f"resid {first_lipid}")
-            for bond in self.connection_chains[lipid]:
 
-                _ , chaintemp = self.cut_structure(
-                    tail,
-                    bond,
-                    )
-                c_in_node = [n for n in chaintemp.nodes if "C" in str(n)]
-                chain_l.append(len(c_in_node))
-            print(chain_l, lipid)
-            try:
-                if len(chain_l) == 2:
-                    chain_l = [chain_l[1]] + [chain_l[0]]
+
+            if self.forcefield == "charmm":
+                for bond in self.connection_chains[lipid]:
+
+                    _ , chaintemp = self.cut_structure(
+                        tail,
+                        bond,
+                        )
+                    c_in_node = [n for n in chaintemp.nodes if "C" in str(n)]
+                    chain_l.append(len(c_in_node))
+                #print(chain_l, lipid)
+                try:
+                    if len(chain_l) == 2:
+                        chain_l = [chain_l[1]] + [chain_l[0]]
+                    else:
+                        chain_l = [chain_l[1]] +[chain_l[0]]  + [chain_l[2:]]
+                except:
+                    pass
+                self.chain_info[lipid] = chain_l
+
+            elif self.forcefield == "amber":
+                if lipid != "CHL":
+
+                    chain1 = tail.resids[0] - 1
+                    chain2 = tail.resids[0] + 1
+
+                    atoms_c1 = self.u.select_atoms(f"resid {chain1}")
+                    atoms_c2 = self.u.select_atoms(f"resid {chain2}")
+                    c1_in_node = [n for n in atoms_c1.names if "C" in str(n)]
+                    c2_in_node = [n for n in atoms_c2.names if "C" in str(n)]
+                    chain_l = [len(c1_in_node), len(c2_in_node)]
                 else:
-                    chain_l = [chain_l[1]] +[chain_l[0]]  + [chain_l[2:]]
-            except:
-                pass
+                    chain_l = [7]
+                self.chain_info[lipid] = chain_l
+
+            #print("################", self.chain_info)
 
 
-            self.chain_info[lipid] = chain_l
 
     def guess_last_cs(self):
         for lipid in self.lipid_list:
@@ -450,41 +471,39 @@ class MembProp:
             self.first_lipids[lipid] = first_id
 
 
-            try:
-                bonds = first_lipid.bonds.indices
-                #print(bonds)
-            except:
-                bonds = mda.topology.guessers.guess_bonds(first_lipid, first_lipid.positions)
-            #print(bonds.shape)
-            nodes = set()
-            for edge in bonds:
-                nodes.update(edge)
-            nodes = sorted(nodes)
 
-            names = first_lipid.names
-            map_node_name = {nodes[i]:names[i] for i in range(len(nodes))}
+            if self.forcefield == "charmm":
+                G = self.atgroup2nx(first_lipid)
+                non_polar = []
+                for edge in self.connection_chains[lipid]:
+                    G.remove_edge(edge[0], edge[1])
+                    components = list(nx.connected_components(G))
+                    non_polar.append(next(comp for comp in components if edge[1] in comp)) # Stores the tails
 
-            edges_labeled = [(map_node_name[u], map_node_name[v]) for u,v in bonds]
+                self.non_polar_dict[lipid] = [elem for s in non_polar for elem in s]
+                polar = next(comp for comp in components if self.connection_chains[lipid][0][0] in comp)
+                self.polar_dict[lipid] = polar
 
-            G = nx.Graph()
-            G.add_edges_from(edges_labeled)
+            elif self.forcefield == "amber":
 
-            non_polar = []
 
-            for edge in self.connection_chains[lipid]:
-                G.remove_edge(edge[0], edge[1])
+                if lipid != "CHL":
+                    heads_ats = first_lipid
+                    self.polar_dict[lipid] = heads_ats.names
 
-                components = list(nx.connected_components(G))
+                    tail1 = self.u.select_atoms(f"resid {first_id -1}")
+                    tail2 = self.u.select_atoms(f"resid {first_id +1}")
+                    #print("Here: ########", tail1.names, tail2.names, list(tail1.names) + list(tail2.names))
+                    non_polar = list(set(list(tail1.names) + list(tail2.names)))
+                    self.non_polar_dict[lipid] = non_polar
+                else:
+                    self.polar_dict[lipid] = ["O1", "HO1"]
+                    non_polar = first_lipid.names
+                    non_polar_final = [name for name in non_polar if name not in self.polar_dict[lipid]]
+                    self.non_polar_dict[lipid] = non_polar_final
 
-                non_polar.append(next(comp for comp in components if edge[1] in comp))
-                #if lipid == "CHL1":
-                    #print(components, next(comp for comp in components if edge[1] in comp))
 
-            self.non_polar_dict[lipid] = [elem for s in non_polar for elem in s]
 
-            polar = next(comp for comp in components if self.connection_chains[lipid][0][0] in comp)
-
-            self.polar_dict[lipid] = polar
 
             #print(lipid , ":", self.polar_dict[lipid])
 
@@ -510,29 +529,15 @@ class MembProp:
 
             if lipid != "CHL1":
 
-                try:
-                    bonds = first_lipid.bonds.indices
-                    #print(bonds)
-                except:
-                    bonds = mda.topology.guessers.guess_bonds(first_lipid, first_lipid.positions)
-                nodes = set()
-                for edge in bonds:
-                    nodes.update(edge)
-                nodes = sorted(nodes)
 
-                names = first_lipid.names
-                map_node_name = {nodes[i]:names[i] for i in range(len(nodes))}
+                G = self.atgroup2nx(first_lipid)
 
-                edges_labeled = [(map_node_name[u], map_node_name[v]) for u,v in bonds]
-
-                G = nx.Graph()
-                G.add_edges_from(edges_labeled)
 
                 chains = []
                 for edge in self.connection_chains[lipid]:
                     G.remove_edge(edge[0], edge[1])
                     components = list(nx.connected_components(G))
-                    chains.append(next(comp for comp in components if edge[1] in comp))
+                    chains.append(next(comp for comp in components if edge[1] in comp)) # Store the tail of the lipids
 
                 chain_graphs = []
                 carbons = []
@@ -551,7 +556,7 @@ class MembProp:
                         carbon_conections[carbon] = connected_atoms
 
 
-                print("here", carbon_conections)
+                #print("here", carbon_conections)
 
             self.chain_conections[lipid] = carbon_conections
 
@@ -584,23 +589,7 @@ class MembProp:
 
         """
 
-        try:
-            bonds = structure.bonds.indices
-            #print(bonds)
-        except:
-            bonds = mda.topology.guessers.guess_bonds(structure, structure.positions)
-        nodes = set()
-        for edge in bonds:
-            nodes.update(edge)
-        nodes = sorted(nodes)
-
-        names = structure.names
-        map_node_name = {nodes[i]:names[i] for i in range(len(nodes))}
-
-        edges_labeled = [(map_node_name[u], map_node_name[v]) for u,v in bonds]
-
-        G = nx.Graph()
-        G.add_edges_from(edges_labeled)
+        G = self.atgroup2nx(structure)
         G.remove_edge(bond[0], bond[1])
         components = list(nx.connected_components(G))
         subgraphs = [G.subgraph(c).copy() for c in components]
@@ -611,6 +600,40 @@ class MembProp:
         part2 = subgraphs[1] if bond[1] in subgraphs[1].nodes else subgraphs[0]
 
         return part1, part2
+
+    def atgroup2nx(self, atgroup):
+
+        """Function to convert an MDAnalysis AtomGroup to a NetworkX Graph.
+
+        Parameters
+        ----------
+        atgroup : MDAnalysis AtomGroup
+            AtomGroup to convert
+
+        Returns
+        -------
+        NetworkX Graph
+            Graph representing the structure of the AtomGroup
+        """
+        try:
+            bonds = atgroup.bonds.indices
+            #print(bonds)
+        except:
+            bonds = mda.topology.guessers.guess_bonds(atgroup, atgroup.positions)
+        nodes = set()
+        for edge in bonds:
+            nodes.update(edge)
+        nodes = sorted(nodes)
+
+        names = atgroup.names
+        map_node_name = {nodes[i]:names[i] for i in range(len(nodes))}
+
+        edges_labeled = [(map_node_name[u], map_node_name[v]) for u,v in bonds]
+
+        G = nx.Graph()
+        G.add_edges_from(edges_labeled)
+
+        return G
 
 
     def chain_structure(self, chain):
@@ -638,14 +661,28 @@ class MembProp:
 
 
         chains = []
-        for chain in self.connection_chains[lipid]:
 
-            _, chaintemp = self.cut_structure(
-                    self.memb.select_atoms(f"resid {lipids_ids[lipid]}"),
-                    chain,
-                    )
-            chains.append(chaintemp)
+        if self.forcefield == "charmm":
+            for chain in self.connection_chains[lipid]:
 
+                _, chaintemp = self.cut_structure(
+                        self.memb.select_atoms(f"resid {lipids_ids[lipid]}"),
+                        chain,
+                        )
+                chains.append(chaintemp)
+
+        elif self.forcefield == "amber":
+            if lipid != "CHL":
+                chain1 = lipids_ids[lipid] - 1
+                chain2 = lipids_ids[lipid] + 1
+
+                atoms_c1 = self.u.select_atoms(f"resid {chain1}")
+                atoms_c2 = self.u.select_atoms(f"resid {chain2}")
+
+                Ch1 = self.atgroup2nx(atoms_c1)
+                Ch2 = self.atgroup2nx(atoms_c2)
+
+                chains = [Ch1, Ch2]
 
 
         return [self.chain_structure(tail) for tail in chains]

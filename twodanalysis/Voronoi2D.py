@@ -33,6 +33,7 @@ class Voronoi2D(MembProp):
                 edges = None,
                 connection_chains = None,
                 working_lip = None,
+                forcefield = "charmm",
                 ):
         """ Class to compute the Voronoi tessalation for a given universe. It uses the Voronoi class from scipy.spatial
 
@@ -72,7 +73,10 @@ class Voronoi2D(MembProp):
                          lipid_list=lipid_list,
                          verbose=verbose,
                          connection_chains=connection_chains,
-                         working_lip=working_lip)
+                         working_lip=working_lip,
+                         forcefield=forcefield)
+
+        self.forcefield = forcefield
 
         if edges is None:
             positions = self.all_head.positions[:,:2]
@@ -756,15 +760,27 @@ class Voronoi2D(MembProp):
         n_chain2 = self.chain_info[lipid][1] if n_chain is None else n_chain[1]
 
         chain_structure = self.extract_chain_info(lipid)
+        print("Chain strcucture: ", chain_structure)
         def get_ids(lipids):
             layer_lip = lipids.select_atoms(f"resname {lipid}")
+            lip_resids = layer_lip.residues.resids
+
             angles = []
             if n_chain1 !=0:
-                angles_sn1 = OrderParameters.individual_order_sn1(layer_lip, n_chain1, atoms_inv=chain_structure[1])
+                layer_lip1 = layer_lip
+                if self.forcefield == "amber":
+                    layer_lip1 = self.u.select_atoms(f"resid {' '.join(map(str, lip_resids - 1))}")
+                angles_sn1 = OrderParameters.individual_order_sn1(layer_lip1, n_chain1, atoms_inv=chain_structure[1])
                 angles.append(angles_sn1.T)
             if n_chain2 !=0:
-                angles_sn2 = OrderParameters.individual_order_sn2(layer_lip, n_chain2, atoms_inv=chain_structure[0])
+                layer_lip1 = layer_lip
+                #print("Here::::::", layer_lip1)
+                if self.forcefield == "amber":
+                    layer_lip1 = self.u.select_atoms(f"resid {' '.join(map(str, lip_resids + 1))}")
+                #print("Here::::::", layer_lip1)
+                angles_sn2 = OrderParameters.individual_order_sn2(layer_lip1, n_chain2, atoms_inv=chain_structure[0])
                 angles.append(angles_sn2.T)
+            #print(angles)
             angles = np.concatenate(angles, axis=1)
 
             layer_ids = layer_lip.residues.resids
