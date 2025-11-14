@@ -165,24 +165,49 @@ class Voronoi2D(MembProp):
 
 
         if splay:
-            carbons1 = [self.working_lip[lipid]["last_c"][0] for lipid in lipid_list]
-            carbons2 = [self.working_lip[lipid]["last_c"][1] for lipid in lipid_list]
-            heads = [self.working_lip[lipid]["head"] for lipid in lipid_list]
-            heads = self.build_resname_atom(lipid_list, heads)
-            carbons1 = self.build_resname_atom(lipid_list, carbons1)
-            carbons2 = self.build_resname_atom(lipid_list, carbons2)
+
+            lipid_list1 = lipid_list.copy()
+            #print("######", lipid_list1)
+            #lipid_list1.remove("CHL") if "CHL" in lipid_list1 else lipid_list1
+            carbons1 = [self.working_lip[lipid]["last_c"][0] for lipid in lipid_list1]
+            carbons2 = [self.working_lip[lipid]["last_c"][1] for lipid in lipid_list1]
+
+
+            heads = [self.working_lip[lipid]["head"] for lipid in lipid_list1]
+            heads = self.build_resname_atom(lipid_list1, heads)
+
+
+
+
             selection_string_byres = f"byres {selection_string}"
             lipid_ats = self.memb.select_atoms(selection_string_byres)
 
 
             head_p = lipid_ats.select_atoms(heads)
-            c1 = lipid_ats.select_atoms(carbons1)
-            c2 = lipid_ats.select_atoms(carbons2)
+            ids = head_p.residues.resids
+
+            if self.forcefield == "charmm":
+                carbons1 = self.build_resname_atom(lipid_list1, carbons1)
+                carbons2 = self.build_resname_atom(lipid_list1, carbons2)
+                c1 = lipid_ats.select_atoms(carbons1)
+                c2 = lipid_ats.select_atoms(carbons2)
+            elif self.forcefield == "amber":
+                carbons1 = self.build_name(carbons1)
+                carbons2 = self.build_name(carbons2)
+                #print(f"({carbons1}) and (resid " + " ".join(map(str, ids - 1)) + ")")
+                c1 = self.u.select_atoms(f"({carbons1}) and (resid " + " ".join(map(str, ids - 1)) + ")")
+                c2 = self.u.select_atoms(f"({carbons2}) and (resid " + " ".join(map(str, ids + 1)) + ")")
+
+
+            #print("##################3", c1.names, head_p.names, )
             v1 = c1.positions - head_p.positions
             v2 = c2.positions - head_p.positions
+
+
             #print(heads,carbons2,carbons1, head_p.n_atoms, c1.n_atoms)
             costheta = np.sum(v1 * v2, axis=1)/(np.linalg.norm(v1, axis = 1)* np.linalg.norm(v2, axis = 1))# Compute the cos of splay angle, must bet lenmght nlipids
             costheta = np.arccos(costheta)
+            #print("################################",costheta)
             costheta = np.rad2deg(costheta)
             others.append(costheta)
             columns_others.append("splay")
@@ -679,9 +704,9 @@ class Voronoi2D(MembProp):
 
         for _ in self.u.trajectory[start:final:step]:
 
-            voronoi_dict = self.voronoi_properties(layer = layer, splay=True)
+            voronoi_dict = self.voronoi_properties(layer = layer, lipid_list=lipid_list, splay=True)
 
-
+            #print(voronoi_dict)
             splay_vect = voronoi_dict["splay"]
             for lipid in no_present:
                 splay_vect[voronoi_dict["resnames"] == lipid] = np.nan
@@ -693,10 +718,6 @@ class Voronoi2D(MembProp):
                                          edges,
 
                                          )
-
-
-
-
             matrices.append(matrix_height)
 
         final_mat = np.nanmean(np.array(matrices), axis = 0)
