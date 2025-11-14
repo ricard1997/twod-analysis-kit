@@ -564,10 +564,18 @@ class Cumulative2D(MembProp):
             self.guess_last_cs()
             carbons1 = [self.working_lip[lipid]["last_c"][0] for lipid in lipid_list]
             carbons2 = [self.working_lip[lipid]["last_c"][1] for lipid in lipid_list]
+            print("###########", carbons1, carbons2)
             heads = [self.working_lip[lipid]["head"] for lipid in lipid_list]
             heads = self.build_resname_atom(lipid_list, heads)
-            carbons1 = self.build_resname_atom(lipid_list, carbons1)
-            carbons2 = self.build_resname_atom(lipid_list, carbons2)
+            if self.forcefield == "charmm":
+                carbons1 = self.build_resname_atom(lipid_list, carbons1)
+                carbons2 = self.build_resname_atom(lipid_list, carbons2)
+            if self.forcefield == "amber":
+                carbons1 = self.build_name(carbons1)
+                carbons2 = self.build_name(carbons2)
+                #carbons1 = [self.working_lip[lipid]["last_c"][0] for lipid in lipid_list]
+                #carbons2 = [self.working_lip[lipid]["last_c"][1] for lipid in lipid_list]
+            #print("First check::::", carbons1, carbons2, heads)
             columns.append("splay")
 
         if function:
@@ -596,11 +604,22 @@ class Cumulative2D(MembProp):
 
             # Select the atoms in the head
             if splay:
+
                 final_selection_byres = f"byres {final_selection_string}"
                 lipid_ats = self.memb.select_atoms(final_selection_byres)
                 head_p = lipid_ats.select_atoms(heads)
-                c1 = lipid_ats.select_atoms(carbons1)
-                c2 = lipid_ats.select_atoms(carbons2)
+                ids = head_p.residues.resids
+                #print("#################", ids)
+                if self.forcefield == "charmm":
+                    c1 = lipid_ats.select_atoms(carbons1)
+                    c2 = lipid_ats.select_atoms(carbons2)
+                if self.forcefield == "amber":
+                    #print("resid " + " ".join(map(str, ids - 1)))
+                    c1 = self.u.select_atoms(f"({carbons1}) and (resid " + " ".join(map(str, ids - 1)) + ")")
+
+                    c2 = self.u.select_atoms(f"({carbons2}) and (resid " + " ".join(map(str, ids + 1))+ ")")
+                    #print("#####", c1.n_atoms, c2.n_atoms, head_p.n_atoms, carbons1, carbons2)
+
                 v1 = c1.positions - head_p.positions
                 v2 = c2.positions - head_p.positions
 

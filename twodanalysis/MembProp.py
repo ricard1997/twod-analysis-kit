@@ -244,13 +244,25 @@ class MembProp:
 
 
     def guess_last_cs(self):
-        for lipid in self.lipid_list:
-            first_lipid = self.memb.select_atoms(f"resname {lipid}").resids[0]
-            actual_sn1 = self.memb.select_atoms(f"resid {first_lipid} and name C3*")
-            actual_sn2 = self.memb.select_atoms(f"resid {first_lipid} and name C2*")
-            actual_sn1 = actual_sn1.names
-            actual_sn2 = actual_sn2.names
-            self.working_lip[lipid]["last_c"] = [actual_sn1[-1], actual_sn2[-1]]
+
+        if self.forcefield == "charmm":
+            for lipid in self.lipid_list:
+                first_lipid = self.memb.select_atoms(f"resname {lipid}").resids[0]
+                actual_sn1 = self.memb.select_atoms(f"resid {first_lipid} and name C3*")
+                actual_sn2 = self.memb.select_atoms(f"resid {first_lipid} and name C2*")
+                actual_sn1 = actual_sn1.names
+                actual_sn2 = actual_sn2.names
+                self.working_lip[lipid]["last_c"] = [actual_sn1[-1], actual_sn2[-1]]
+        elif self.forcefield == "amber":
+            for lipid in self.lipid_list:
+                structure = self.extract_chain_info(lipid)
+                carbons_1 = [atom for conn in structure[0] for atom in conn if "C" in atom]
+                carbons_2 = [atom for conn in structure[0] for atom in conn if "C" in atom]
+                self.working_lip[lipid]["last_c"] = [carbons_1[-1], carbons_2[-1]]
+
+
+
+
         return self.working_lip
 
 
@@ -294,8 +306,9 @@ class MembProp:
         if isinstance(resnames_list, str):
             return f"(name {resnames_list})"
         string = " (name " + resnames_list[0]
-        for resname in resnames_list[1:]:
-            string = string + " or name " + resname
+        if len(resnames_list) > 1:
+            for resname in resnames_list[1:]:
+                string = string + " or name " + resname
         string = string + ") "
         return string
 
@@ -683,6 +696,15 @@ class MembProp:
                 Ch2 = self.atgroup2nx(atoms_c2)
 
                 chains = [Ch1, Ch2]
+            if lipid == "CHL" and "CHL" in self.connection_chains:
+                for chain in self.connection_chains[lipid]:
+
+                    _, chaintemp = self.cut_structure(
+                            self.memb.select_atoms(f"resid {lipids_ids[lipid]}"),
+                            chain,
+                            )
+
+                    chains.append(chaintemp)
 
 
         return [self.chain_structure(tail) for tail in chains]
