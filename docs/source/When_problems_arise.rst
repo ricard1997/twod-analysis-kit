@@ -159,3 +159,9 @@ Other problems?
 
 If you encounter any other issues while using our code, feel free to open an issue on GitHub or contact the developers directly at
 ricardox@buffalo.edu or vmonje@buffalo.edu. Please use the subject line "2Danalysis issue" when reaching out via email.
+
+
+
+.. rubric:: References
+
+- `Ramirez, R. X., Bosch, A. M., Pérez, R., Guzman, H. V., & Monje, V. (2025). 2Danalysis: A toolbox for analysis of lipid membranes and biopolymers in two-dimensional space. Biophysical Journal. <https://www.cell.com/biophysj/fulltext/S0006-3495(25)00321-2>`_
