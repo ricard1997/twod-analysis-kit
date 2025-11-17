@@ -13,8 +13,16 @@ The first two classes project membrane properties and features to the membrane s
 
 The third class :code:`PackingDefects` identifies regions where the hydrophobic membrane core is exposed. The implementation in Python is built and optimized from a method implemented in PackMem.
 
+
+
 Below are concise explanations and examples of the Cumulative2D, Voronoi2D, and PackingDefects workflows. For a detailed tutorial notebook visit https://github.com/pyF4all/2DanalysisTutorials/tree/main
 
+.. note::
+    Membrane simulations can be carried out with different lipid forcefields, each of them with its own naming conventions for lipid atoms.
+    The current version of 2Danalysis supports CHARMM and Amber lipid naming conventions, with CHARMM as default. Refer to. If you are using a different forcefield or
+    naming scheme, please refer to the documentation on how to customize atom selections for your specific case. However, we do not guarantee that
+    all the functionalities will work properly for other forcefields. Refer to :ref:`forcefields` to learn how to specify the forcefield and to :ref:`When problems arise <when_problems_arise>`
+    for guidance on customizing lipid atom selections in case your lipids is not recognized in any forcefield.
 
 Download test files
 ^^^^^^^^^^^^^^^^^^^^
@@ -435,7 +443,8 @@ To plot and visualize the output run:
 
 .. image:: packing_defects.png
 
-The following figure shows: (A) the packing deffects plot on VMD, (B) the output from :code:`PackingDefects`, and (C) the overlay of both approaches for comparison and validation
+The following figure shows: (A) the packing deffects plot on VMD, (B) the output from :code:`PackingDefects`, and (C)
+the overlay of both approaches for comparison and validation
 
 .. image:: packing1.png
 
@@ -446,7 +455,8 @@ The following figure shows: (A) the packing deffects plot on VMD, (B) the output
 Multiple Frames
 +++++++++++++++
 
-For statistical analysis of packing deffects across several frames, :code:`PackingDefects` returns a pandas dataframe and an array with the size of individual packing defects along the trajectory.
+For statistical analysis of packing deffects across several frames, :code:`PackingDefects` returns a pandas dataframe
+and an array with the size of individual packing defects along the trajectory.
 
 To run the analysis over n frames type:
 
