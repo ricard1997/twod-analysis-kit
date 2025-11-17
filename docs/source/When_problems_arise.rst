@@ -1,3 +1,4 @@
+.. _when_problems_arise:
 When problems arise
 ====================
 
@@ -48,10 +49,10 @@ For example, for a membrane composed by "DSPC", "DODMA", "CHL1", and "POPE", we 
 
 
 .. note::
-    This method supports the inclusion of lipids that might otherwise produce errors, as well as user-defined and coarse-grained lipids. 
-    Additionally, users can specify any atom as the lipid headgroup, allowing for flexible selection—such as choosing a random atom from 
-    each lipid—for 2D projections with 2Danalysis. Users may also define multiple atoms as the headgroup; in this case, the algorithm 
-    calculates the center of mass of the selected atoms to represent the head. (This last feature is experimental and may not be compatible 
+    This method supports the inclusion of lipids that might otherwise produce errors, as well as user-defined and coarse-grained lipids.
+    Additionally, users can specify any atom as the lipid headgroup, allowing for flexible selection—such as choosing a random atom from
+    each lipid—for 2D projections with 2Danalysis. Users may also define multiple atoms as the headgroup; in this case, the algorithm
+    calculates the center of mass of the selected atoms to represent the head. (This last feature is experimental and may not be compatible
     with all analyses.)
 
 
@@ -59,14 +60,14 @@ Customizing lipid tails
 #######################
 
 In cases such as splay angle, order parameters and packing defects, in addition to head information we need information of the tail.
-Our code can automatically infer tail information for most standard lipids. However, there are exceptions—such as sterols, lipids with 
-a single tail, or those with more than two tails—where the automatic detection may not work as expected. In such cases, the user should 
+Our code can automatically infer tail information for most standard lipids. However, there are exceptions—such as sterols, lipids with
+a single tail, or those with more than two tails—where the automatic detection may not work as expected. In such cases, the user should
 manually specify the bonds that connect the head to the tail. Below is an image rendered with VMD illustrating these bonds for CHL1, DODMA, and DSPC.
 
  .. image:: connection.png
 
-The image above shows the atom names involved in the bonds that connect the lipid tails to the headgroup for various lipid types. These atom 
-pairs should be provided via the connection_chain attribute to ensure proper processing by 2Danalysis. Below is an example illustrating how 
+The image above shows the atom names involved in the bonds that connect the lipid tails to the headgroup for various lipid types. These atom
+pairs should be provided via the connection_chain attribute to ensure proper processing by 2Danalysis. Below is an example illustrating how
 to define this attribute for the lipids shown (CHL1, DODMA, and DSPC).
 
 
@@ -98,9 +99,9 @@ to define this attribute for the lipids shown (CHL1, DODMA, and DSPC).
 
 
 .. note::
-    This method allows the inclusion of any lipid type into the 2Danalysis framework. For lipids with two tails, 
-    we recommend specifying the chains in the order sn1, sn2. The method also supports lipids with any number 
-    of tails—for example, a lipid with three tails should be defined using a list of three bonds. Using this 
+    This method allows the inclusion of any lipid type into the 2Danalysis framework. For lipids with two tails,
+    we recommend specifying the chains in the order sn1, sn2. The method also supports lipids with any number
+    of tails—for example, a lipid with three tails should be defined using a list of three bonds. Using this
     approach, virtually any lipid can be incorporated, including custom-defined lipids and MARTINI coarse-grained lipids.
 
 We also offer a nice way to check if the lipids tails are being assigned correctly by plotting them with :code:`visualize_polarity()` which would
@@ -118,8 +119,8 @@ Periodicity
 +++++++++++++++++++
 
 
-All components of our code handle periodic boundary conditions by replicating a portion of the data—by default, 10% along each edge. 
-However, in certain cases, especially when using Voronoi2D, this default replication may be insufficient, leading to unusually large 
+All components of our code handle periodic boundary conditions by replicating a portion of the data—by default, 10% along each edge.
+However, in certain cases, especially when using Voronoi2D, this default replication may be insufficient, leading to unusually large
 or visually distorted APL (Area Per Lipid) values. In such situations, users should increase the periodicity replication percentage as shown below.
 
 .. code-block:: python
@@ -148,7 +149,7 @@ or visually distorted APL (Area Per Lipid) values. In such situations, users sho
     membrane.periodicity = 0.5 # Increase replication of data to 50%
 
 .. note::
-    Adjusting the periodicity replication is not necessary unless your visualizations are showing artifacts or errors. In most 
+    Adjusting the periodicity replication is not necessary unless your visualizations are showing artifacts or errors. In most
     cases, especially when the edges of your system are much smaller than the size of the periodic box, the default setting is sufficient.
 
 
@@ -156,5 +157,11 @@ or visually distorted APL (Area Per Lipid) values. In such situations, users sho
 Other problems?
 +++++++++++++++++++
 
-If you encounter any other issues while using our code, feel free to open an issue on GitHub or contact the developers directly at 
+If you encounter any other issues while using our code, feel free to open an issue on GitHub or contact the developers directly at
 ricardox@buffalo.edu or vmonje@buffalo.edu. Please use the subject line "2Danalysis issue" when reaching out via email.
+
+
+
+.. rubric:: References
+
+- `Ramirez, R. X., Bosch, A. M., Pérez, R., Guzman, H. V., & Monje, V. (2025). 2Danalysis: A toolbox for analysis of lipid membranes and biopolymers in two-dimensional space. Biophysical Journal. <https://www.cell.com/biophysj/fulltext/S0006-3495(25)00321-2>`_
